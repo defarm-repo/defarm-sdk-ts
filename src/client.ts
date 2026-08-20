@@ -152,6 +152,7 @@ export class DefarmClient {
   private readonly keystore: Keystore;
   readonly network: "testnet" | "public";
   private identity: KeyIdentity | null = null;
+  private inFlightEnsureKeys: Promise<KeyIdentity> | null = null;
   private cachedMe: { userId: string; workspaceId: string } | null = null;
 
   constructor(private readonly config: DefarmConfig) {
@@ -198,28 +199,37 @@ export class DefarmClient {
   /**
    * Generate (client-side, first time only) and register this workspace's key pairs:
    * Ed25519 for authorship and X25519 for encryption, the public halves only, the encryption key
-   * carrying its signed binding. Idempotent. The DeFarm server is a DIRECTORY, not an authority:
-   * it never sees a private key, and this method never returns one.
+   * carrying its signed binding. Idempotent AND race-safe (issue #8): concurrent calls on the
+   * same client share one in-flight promise, and the keystore's `getOrCreate` runs the whole
+   * get→generate→put cycle under its lock — two racing `ensureKeys()` must never register two
+   * key pairs and keep only one on disk (a field sealed to the dropped key would be unopenable
+   * forever). The DeFarm server is a DIRECTORY, not an authority: it never sees a private key,
+   * and this method never returns one.
    */
   async ensureKeys(): Promise<KeyIdentity> {
     if (this.identity) return this.identity;
+    if (this.inFlightEnsureKeys) return this.inFlightEnsureKeys;
+    this.inFlightEnsureKeys = this.doEnsureKeys().finally(() => {
+      // Clear on settle: success is memoized in `identity`; failure must allow a retry.
+      this.inFlightEnsureKeys = null;
+    });
+    return this.inFlightEnsureKeys;
+  }
+
+  private async doEnsureKeys(): Promise<KeyIdentity> {
     const { workspaceId } = await this.me();
 
-    let signing = await this.keystore.get("signing");
-    if (!signing) {
-      const kp = generateEd25519KeyPair();
-      signing = { keyId: `sign-${randomSuffix()}`, privateKey: kp.seed };
-      await this.keystore.put("signing", signing);
-    }
+    const signing = await this.keystore.getOrCreate("signing", () => ({
+      keyId: `sign-${randomSuffix()}`,
+      privateKey: generateEd25519KeyPair().seed,
+    }));
     const signingPub = ed25519PublicKey(signing.privateKey);
     const signingPubB64 = toBase64(signingPub);
 
-    let enc = await this.keystore.get("encryption");
-    if (!enc) {
-      const kp = generateX25519KeyPair();
-      enc = { keyId: `enc-${randomSuffix()}`, privateKey: kp.privateKey };
-      await this.keystore.put("encryption", enc);
-    }
+    const enc = await this.keystore.getOrCreate("encryption", () => ({
+      keyId: `enc-${randomSuffix()}`,
+      privateKey: generateX25519KeyPair().privateKey,
+    }));
     const encPub = x25519PublicKey(enc.privateKey);
     const encPubB64 = toBase64(encPub);
 
@@ -598,6 +608,13 @@ class LazyFileKeystore implements Keystore {
 
   async put(kind: Parameters<Keystore["put"]>[0], key: Parameters<Keystore["put"]>[1]) {
     return (await this.resolve()).put(kind, key);
+  }
+
+  async getOrCreate(
+    kind: Parameters<Keystore["getOrCreate"]>[0],
+    factory: Parameters<Keystore["getOrCreate"]>[1],
+  ) {
+    return (await this.resolve()).getOrCreate(kind, factory);
   }
 }
 
