@@ -65,5 +65,27 @@ export class NotImplementedError extends DefarmError {
 
 export class KeystoreError extends DefarmError {}
 
+/** A required input is missing or of the wrong type — fail at the door with the field's name. */
+export class InvalidInputError extends DefarmError {
+  constructor(public readonly field: string, message?: string) {
+    super(message ?? `missing or invalid input: "${field}"`);
+  }
+}
+
+/**
+ * The key registered on the server under this key_id does NOT match the private key in the local
+ * keystore (restored backup, two machines sharing an id, or a race). Continuing would make every
+ * seal addressed to this workspace unopenable, with the error surfacing far from the cause.
+ */
+export class KeyMismatchError extends DefarmError {
+  constructor(public readonly keyId: string) {
+    super(
+      `key "${keyId}" is already registered with a DIFFERENT public key than this keystore's ` +
+        `private key derives — refusing to continue (seals addressed here would be unopenable). ` +
+        `Use a fresh key_id or restore the matching keystore.`,
+    );
+  }
+}
+
 /** Wrong credential type for a call (e.g. ingestion requires X-API-Key, not a Bearer token). */
 export class AuthModeError extends DefarmError {}

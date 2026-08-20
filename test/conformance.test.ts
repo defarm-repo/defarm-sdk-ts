@@ -20,8 +20,9 @@ import type { SealedField } from "../src/core/envelope.js";
  * strings, commitments, envelopes, signatures). This suite replays them and demands byte
  * equality. NO language implementation ships to production without this green.
  *
- * Until the generator lands in engines, the directory holds no vectors and the suite reports
- * itself as skipped — loudly, so a green run is never mistaken for conformance-proven.
+ * FAIL CLOSED (issue #2): a run without vector files FAILS. A missing directory, a stray
+ * .gitignore, or a build step that drops fixtures must break CI — never turn the anti-drift
+ * guard silently inert while everything stays green.
  */
 const VECTORS_DIR = join(dirname(fileURLToPath(import.meta.url)), "vectors");
 
@@ -61,14 +62,12 @@ const files = existsSync(VECTORS_DIR)
   : [];
 
 describe("conformance vectors (Rust oracle, engines#591)", () => {
-  it(files.length > 0 ? "vectors present" : "NO VECTORS YET — conformance NOT proven", () => {
-    if (files.length === 0) {
-      console.warn(
-        "⚠ test/vectors/ has no vectors.json — the format guard is not active. " +
-          "Generate them from the Rust oracle (engines#591) before any release.",
-      );
-    }
-    expect(true).toBe(true);
+  it("at least one vector file is present (the guard fails closed)", () => {
+    expect(
+      files.length,
+      "test/vectors/ holds no *.json — the anti-drift guard would be inert. " +
+        "Restore the vectors or regenerate them from the Rust oracle (engines#591).",
+    ).toBeGreaterThan(0);
   });
 
   for (const file of files) {

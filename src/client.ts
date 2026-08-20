@@ -24,6 +24,8 @@ import type {
 import {
   ApiError,
   AuthModeError,
+  InvalidInputError,
+  KeyMismatchError,
   KeystoreError,
   NotImplementedError,
   NotSealableFieldError,
@@ -72,7 +74,14 @@ export interface SealRecipientInput {
   bindingSigB64: string;
 }
 
-export interface SealOptions {
+/** Everything `seal` needs, in one object (issue #3: `seal` and `open` share the same shape style). */
+export interface SealInput {
+  /** The item's DFID. */
+  dfid: string;
+  /** The field to seal (e.g. `preco_venda`). */
+  fieldPath: string;
+  /** The value — a string is sealed as `text/plain`, anything else as JSON. */
+  value: unknown;
   /** The circuit the event is written into (the integrator's domain knowledge). */
   circuitId: string;
   /** Who can open. Default: nobody but yourself (sealed-private). */
@@ -86,6 +95,11 @@ export interface SealOptions {
    * ENVELOPE (commitment, not the value) surface on the public /verify page.
    */
   visibility?: "private" | "public";
+}
+
+export interface OpenInput {
+  dfid: string;
+  fieldPath: string;
 }
 
 export interface SealResult {
@@ -242,13 +256,31 @@ export class DefarmClient {
     return this.identity;
   }
 
-  /** POST that tolerates "already registered" (409) — what makes ensureKeys idempotent. */
-  private async registerTolerant(url: string, body: unknown): Promise<void> {
+  /**
+   * POST that tolerates "already registered" (409) — what makes ensureKeys idempotent. But a 409
+   * is only success if the key registered under this key_id has the SAME public key the local
+   * private key derives (issue #4): a restored backup, two machines sharing a key_id, or a race
+   * can leave the directory holding a different public key — then every seal addressed to this
+   * workspace is unopenable, with the error surfacing far from the cause (the engines#528 class:
+   * registers fine, breaks every later seal). On 409 we GET the registered key and compare;
+   * mismatch is a hard, named error — never a silent "ok".
+   */
+  private async registerTolerant(
+    url: string,
+    body: { key_id: string; public_key_b64: string; [k: string]: unknown },
+  ): Promise<void> {
     try {
       await this.http.request("POST", url, { body });
     } catch (e) {
-      if (e instanceof ApiError && e.status === 409) return;
-      throw e;
+      if (!(e instanceof ApiError) || e.status !== 409) throw e;
+      const registered = await this.http.request<
+        { key_id: string; public_key_b64: string }[]
+      >("GET", url);
+      const existing = registered.find((k) => k.key_id === body.key_id);
+      if (!existing) throw e; // 409 for some other reason — surface the original error
+      if (existing.public_key_b64.trim() !== body.public_key_b64.trim()) {
+        throw new KeyMismatchError(body.key_id);
+      }
     }
   }
 
@@ -286,12 +318,14 @@ export class DefarmClient {
    * Every recipient's key binding is RE-VERIFIED here before sealing — a key whose binding does
    * not close is refused (`RecipientBindingError`), even if it came from the DeFarm directory.
    */
-  async seal(
-    dfid: string,
-    fieldPath: string,
-    value: unknown,
-    opts: SealOptions,
-  ): Promise<SealResult> {
+  async seal(input: SealInput): Promise<SealResult> {
+    requireString(input, "dfid");
+    requireString(input, "fieldPath");
+    requireString(input, "circuitId");
+    if (!("value" in input) || input.value === undefined) {
+      throw new InvalidInputError("value", 'seal() requires "value" — the data to seal');
+    }
+    const { dfid, fieldPath, value, ...opts } = input;
     const identity = await this.ensureKeys();
     const signing = await this.keystore.get("signing");
     if (!signing) throw new KeystoreError("signing key vanished from keystore");
@@ -391,7 +425,9 @@ export class DefarmClient {
    * LOCAL private key, decrypt, and verify commitment + sealer signature. All decryption happens
    * here — the server only ever handed over the padlocked envelope.
    */
-  async open(ref: { dfid: string; fieldPath: string }): Promise<OpenResult> {
+  async open(ref: OpenInput): Promise<OpenResult> {
+    requireString(ref, "dfid");
+    requireString(ref, "fieldPath");
     const enc = await this.keystore.get("encryption");
     if (!enc) {
       throw new KeystoreError("no encryption key in keystore — call ensureKeys() first");
@@ -562,6 +598,18 @@ class LazyFileKeystore implements Keystore {
 
   async put(kind: Parameters<Keystore["put"]>[0], key: Parameters<Keystore["put"]>[1]) {
     return (await this.resolve()).put(kind, key);
+  }
+}
+
+/**
+ * Fail at the door with the field's NAME when a required string is missing (issue #3): an
+ * untyped caller (plain JS, MCP agent) must get "seal() requires dfid", never a downstream 404
+ * that prints the literal string "undefined".
+ */
+function requireString(obj: object, field: string): void {
+  const v = (obj as Record<string, unknown> | null | undefined)?.[field];
+  if (typeof v !== "string" || v.length === 0) {
+    throw new InvalidInputError(field, `expected "${field}" to be a non-empty string`);
   }
 }
 
