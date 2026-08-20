@@ -44,12 +44,65 @@ interface FileKeystoreShape {
  * (the DeFarm server cannot recover them; that is the whole point).
  */
 export class FileKeystore implements Keystore {
+  /** In-process serialization of read-modify-write cycles (issue #6). */
+  private queue: Promise<unknown> = Promise.resolve();
+
   constructor(private readonly path: string) {}
 
   static async defaultPath(): Promise<string> {
     const os = await import("node:os");
     const path = await import("node:path");
     return path.join(os.homedir(), ".defarm", "keys.json");
+  }
+
+  /**
+   * Serialize the read-modify-write against BOTH concurrency axes (issue #6): an in-process
+   * promise queue (two `put`s in the same process) and a cross-process `O_EXCL` lockfile. Losing
+   * this race can drop a private key from the file — and a dropped encryption key means the
+   * fields sealed to it are unrecoverable (the server holds no copy; that is the design).
+   * The lockfile is taken over when older than 10s (crashed holder) and acquisition times out
+   * loudly rather than deadlocking.
+   */
+  private async withLock<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.queue.then(async () => {
+      const fs = await import("node:fs/promises");
+      const lockPath = `${this.path}.lock`;
+      const path = await import("node:path");
+      await fs.mkdir(path.dirname(this.path), { recursive: true, mode: 0o700 });
+      const deadline = Date.now() + 5_000;
+      for (;;) {
+        try {
+          const h = await fs.open(lockPath, "wx", 0o600);
+          await h.close();
+          break;
+        } catch (e: unknown) {
+          if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+          try {
+            const st = await fs.stat(lockPath);
+            if (Date.now() - st.mtimeMs > 10_000) {
+              await fs.rm(lockPath, { force: true });
+              continue;
+            }
+          } catch {
+            continue; // lock vanished between open and stat — retry immediately
+          }
+          if (Date.now() > deadline) {
+            throw new KeystoreError(
+              `timed out acquiring keystore lock ${lockPath} — remove it if no other process is running`,
+            );
+          }
+          await new Promise((r) => setTimeout(r, 50));
+        }
+      }
+      try {
+        return await fn();
+      } finally {
+        await fs.rm(lockPath, { force: true });
+      }
+    });
+    // Keep the chain alive even when this cycle fails.
+    this.queue = run.catch(() => undefined);
+    return run;
   }
 
   private async load(): Promise<FileKeystoreShape> {
@@ -77,16 +130,19 @@ export class FileKeystore implements Keystore {
   }
 
   async put(kind: KeyKind, key: StoredKey): Promise<void> {
-    const fs = await import("node:fs/promises");
-    const path = await import("node:path");
-    const data = await this.load();
-    data.keys[kind] = {
-      key_id: key.keyId,
-      private_key_b64: toBase64(key.privateKey),
-    };
-    await fs.mkdir(path.dirname(this.path), { recursive: true, mode: 0o700 });
-    const tmp = `${this.path}.tmp`;
-    await fs.writeFile(tmp, JSON.stringify(data, null, 2), { mode: 0o600 });
-    await fs.rename(tmp, this.path);
+    await this.withLock(async () => {
+      const fs = await import("node:fs/promises");
+      const crypto = await import("node:crypto");
+      const data = await this.load();
+      data.keys[kind] = {
+        key_id: key.keyId,
+        private_key_b64: toBase64(key.privateKey),
+      };
+      // Unique tmp name + `wx`: a stale .tmp from a crash (possibly with looser permissions)
+      // is never reused — `mode` only applies on CREATION (issue #6).
+      const tmp = `${this.path}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
+      await fs.writeFile(tmp, JSON.stringify(data, null, 2), { mode: 0o600, flag: "wx" });
+      await fs.rename(tmp, this.path);
+    });
   }
 }
