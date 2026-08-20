@@ -24,6 +24,8 @@ import type {
 import {
   ApiError,
   AuthModeError,
+  InvalidInputError,
+  KeyMismatchError,
   KeystoreError,
   NotImplementedError,
   NotSealableFieldError,
@@ -72,7 +74,14 @@ export interface SealRecipientInput {
   bindingSigB64: string;
 }
 
-export interface SealOptions {
+/** Everything `seal` needs, in one object (issue #3: `seal` and `open` share the same shape style). */
+export interface SealInput {
+  /** The item's DFID. */
+  dfid: string;
+  /** The field to seal (e.g. `preco_venda`). */
+  fieldPath: string;
+  /** The value — a string is sealed as `text/plain`, anything else as JSON. */
+  value: unknown;
   /** The circuit the event is written into (the integrator's domain knowledge). */
   circuitId: string;
   /** Who can open. Default: nobody but yourself (sealed-private). */
@@ -86,6 +95,11 @@ export interface SealOptions {
    * ENVELOPE (commitment, not the value) surface on the public /verify page.
    */
   visibility?: "private" | "public";
+}
+
+export interface OpenInput {
+  dfid: string;
+  fieldPath: string;
 }
 
 export interface SealResult {
@@ -286,12 +300,14 @@ export class DefarmClient {
    * Every recipient's key binding is RE-VERIFIED here before sealing — a key whose binding does
    * not close is refused (`RecipientBindingError`), even if it came from the DeFarm directory.
    */
-  async seal(
-    dfid: string,
-    fieldPath: string,
-    value: unknown,
-    opts: SealOptions,
-  ): Promise<SealResult> {
+  async seal(input: SealInput): Promise<SealResult> {
+    requireString(input, "dfid");
+    requireString(input, "fieldPath");
+    requireString(input, "circuitId");
+    if (!("value" in input) || input.value === undefined) {
+      throw new InvalidInputError("value", 'seal() requires "value" — the data to seal');
+    }
+    const { dfid, fieldPath, value, ...opts } = input;
     const identity = await this.ensureKeys();
     const signing = await this.keystore.get("signing");
     if (!signing) throw new KeystoreError("signing key vanished from keystore");
@@ -391,7 +407,9 @@ export class DefarmClient {
    * LOCAL private key, decrypt, and verify commitment + sealer signature. All decryption happens
    * here — the server only ever handed over the padlocked envelope.
    */
-  async open(ref: { dfid: string; fieldPath: string }): Promise<OpenResult> {
+  async open(ref: OpenInput): Promise<OpenResult> {
+    requireString(ref, "dfid");
+    requireString(ref, "fieldPath");
     const enc = await this.keystore.get("encryption");
     if (!enc) {
       throw new KeystoreError("no encryption key in keystore — call ensureKeys() first");
@@ -562,6 +580,18 @@ class LazyFileKeystore implements Keystore {
 
   async put(kind: Parameters<Keystore["put"]>[0], key: Parameters<Keystore["put"]>[1]) {
     return (await this.resolve()).put(kind, key);
+  }
+}
+
+/**
+ * Fail at the door with the field's NAME when a required string is missing (issue #3): an
+ * untyped caller (plain JS, MCP agent) must get "seal() requires dfid", never a downstream 404
+ * that prints the literal string "undefined".
+ */
+function requireString(obj: object, field: string): void {
+  const v = (obj as Record<string, unknown> | null | undefined)?.[field];
+  if (typeof v !== "string" || v.length === 0) {
+    throw new InvalidInputError(field, `expected "${field}" to be a non-empty string`);
   }
 }
 

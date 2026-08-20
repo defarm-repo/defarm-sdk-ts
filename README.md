@@ -55,7 +55,10 @@ const client2 = new DefarmClient({ gateway, auth: { apiKey } });
 const { dfids } = await client2.ingest([{ value_chain: "DEFARM", country: "BR", year: 2026, sisbov, breed: "Nelore" }]);
 
 // 3. Seal a field — only the addressed recipient (and you) can ever read it.
-const sealed = await defarm.seal(dfid, "preco_venda", "R$ 8.500,00", {
+const sealed = await defarm.seal({
+  dfid,
+  fieldPath: "preco_venda",
+  value: "R$ 8.500,00",
   circuitId,
   to: [buyerRecipient], // resolved from the directory; binding re-verified before sealing
 });
