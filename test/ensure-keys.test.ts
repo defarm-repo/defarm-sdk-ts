@@ -49,6 +49,87 @@ function client(fetchImpl: typeof fetch): DefarmClient {
   });
 }
 
+/** Fake gateway that ACCEPTS registrations (201) and records every posted public key. */
+function recordingGateway() {
+  const posted: Record<string, string[]> = { signing: [], encryption: [] };
+  const fetchImpl = (async (url: string, init?: RequestInit) => {
+    const method = init?.method ?? "GET";
+    const respond = (status: number, body: unknown) =>
+      new Response(JSON.stringify(body), { status });
+    if (url.endsWith("/auth/me")) {
+      return respond(200, { user_id: "u1", workspace_id: "ws-1" });
+    }
+    if (method === "POST" && url.endsWith("/workspace/signing-keys")) {
+      posted.signing!.push(JSON.parse(init!.body as string).public_key_b64);
+      return respond(201, { ok: true });
+    }
+    if (method === "POST" && url.endsWith("/workspace/encryption-keys")) {
+      posted.encryption!.push(JSON.parse(init!.body as string).public_key_b64);
+      return respond(201, { ok: true });
+    }
+    throw new Error(`unexpected call: ${method} ${url}`);
+  }) as unknown as typeof fetch;
+  return { fetchImpl, posted };
+}
+
+describe("concurrent ensureKeys never splits identity (issue #8)", () => {
+  it("same client: Promise.all([ensureKeys, ensureKeys]) registers ONE pair, returns the same identity", async () => {
+    const { fetchImpl, posted } = recordingGateway();
+    const c = client(fetchImpl);
+    const [a, b] = await Promise.all([c.ensureKeys(), c.ensureKeys()]);
+    expect(a.signingKeyId).toBe(b.signingKeyId);
+    expect(a.encKeyId).toBe(b.encKeyId);
+    expect(posted.signing).toHaveLength(1);
+    expect(posted.encryption).toHaveLength(1);
+  });
+
+  it("two clients sharing one FileKeystore generate ONE key pair (getOrCreate under the lock)", async () => {
+    const { mkdtempSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { FileKeystore } = await import("../src/keystore.js");
+    const file = join(mkdtempSync(join(tmpdir(), "defarm-ek-")), "keys.json");
+
+    const g1 = recordingGateway();
+    const g2 = recordingGateway();
+    const c1 = new DefarmClient({
+      gateway: "https://example.invalid",
+      auth: { bearer: "tok" },
+      keystore: new FileKeystore(file),
+      fetch: g1.fetchImpl,
+    });
+    const c2 = new DefarmClient({
+      gateway: "https://example.invalid",
+      auth: { bearer: "tok" },
+      keystore: new FileKeystore(file),
+      fetch: g2.fetchImpl,
+    });
+    const [a, b] = await Promise.all([c1.ensureKeys(), c2.ensureKeys()]);
+    // Both processes may POST, but they must be registering the SAME public keys —
+    // the split-identity failure is two different pairs with only one surviving on disk.
+    expect(a.signingKeyId).toBe(b.signingKeyId);
+    expect(a.encKeyId).toBe(b.encKeyId);
+    const uniqueSigning = new Set([...g1.posted.signing!, ...g2.posted.signing!]);
+    const uniqueEnc = new Set([...g1.posted.encryption!, ...g2.posted.encryption!]);
+    expect(uniqueSigning.size).toBe(1);
+    expect(uniqueEnc.size).toBe(1);
+  });
+
+  it("a failed ensureKeys is retryable (the in-flight memo clears on failure)", async () => {
+    let calls = 0;
+    const flaky = (async (url: string, init?: RequestInit) => {
+      calls++;
+      if (calls === 1) return new Response("{}", { status: 500 });
+      const { fetchImpl } = recordingGateway();
+      return fetchImpl(url, init);
+    }) as unknown as typeof fetch;
+    const c = client(flaky);
+    await expect(c.ensureKeys()).rejects.toThrow();
+    const id = await c.ensureKeys();
+    expect(id.workspaceId).toBe("ws-1");
+  });
+});
+
 describe("ensureKeys treats 409 as success ONLY on matching public key (issue #4)", () => {
   it("409 + same public key registered → idempotent success", async () => {
     const c = client(fakeGateway({ listedPubkey: "echo" }));

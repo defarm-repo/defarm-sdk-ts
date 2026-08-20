@@ -19,10 +19,18 @@ export interface StoredKey {
 export interface Keystore {
   get(kind: KeyKind): Promise<StoredKey | null>;
   put(kind: KeyKind, key: StoredKey): Promise<void>;
+  /**
+   * Atomically return the existing key or create-and-store one — the WHOLE get→create→put cycle
+   * under the keystore's lock (issue #8). Two concurrent callers must end up with the SAME key:
+   * a lost generated key means every field sealed to it is unrecoverable (the server holds no
+   * copy; that is the design), so the factory must run at most once per stored key.
+   */
+  getOrCreate(kind: KeyKind, factory: () => StoredKey | Promise<StoredKey>): Promise<StoredKey>;
 }
 
 export class MemoryKeystore implements Keystore {
   private keys = new Map<KeyKind, StoredKey>();
+  private queue: Promise<unknown> = Promise.resolve();
 
   async get(kind: KeyKind): Promise<StoredKey | null> {
     return this.keys.get(kind) ?? null;
@@ -30,6 +38,21 @@ export class MemoryKeystore implements Keystore {
 
   async put(kind: KeyKind, key: StoredKey): Promise<void> {
     this.keys.set(kind, key);
+  }
+
+  async getOrCreate(
+    kind: KeyKind,
+    factory: () => StoredKey | Promise<StoredKey>,
+  ): Promise<StoredKey> {
+    const run = this.queue.then(async () => {
+      const existing = this.keys.get(kind);
+      if (existing) return existing;
+      const created = await factory();
+      this.keys.set(kind, created);
+      return created;
+    });
+    this.queue = run.catch(() => undefined);
+    return run;
   }
 }
 
@@ -129,20 +152,45 @@ export class FileKeystore implements Keystore {
     return { keyId: entry.key_id, privateKey: fromBase64(entry.private_key_b64) };
   }
 
+  /** Write the full keystore atomically. MUST be called while holding the lock. */
+  private async writeLocked(data: FileKeystoreShape): Promise<void> {
+    const fs = await import("node:fs/promises");
+    const crypto = await import("node:crypto");
+    // Unique tmp name + `wx`: a stale .tmp from a crash (possibly with looser permissions)
+    // is never reused — `mode` only applies on CREATION (issue #6).
+    const tmp = `${this.path}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
+    await fs.writeFile(tmp, JSON.stringify(data, null, 2), { mode: 0o600, flag: "wx" });
+    await fs.rename(tmp, this.path);
+  }
+
   async put(kind: KeyKind, key: StoredKey): Promise<void> {
     await this.withLock(async () => {
-      const fs = await import("node:fs/promises");
-      const crypto = await import("node:crypto");
       const data = await this.load();
       data.keys[kind] = {
         key_id: key.keyId,
         private_key_b64: toBase64(key.privateKey),
       };
-      // Unique tmp name + `wx`: a stale .tmp from a crash (possibly with looser permissions)
-      // is never reused — `mode` only applies on CREATION (issue #6).
-      const tmp = `${this.path}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
-      await fs.writeFile(tmp, JSON.stringify(data, null, 2), { mode: 0o600, flag: "wx" });
-      await fs.rename(tmp, this.path);
+      await this.writeLocked(data);
+    });
+  }
+
+  async getOrCreate(
+    kind: KeyKind,
+    factory: () => StoredKey | Promise<StoredKey>,
+  ): Promise<StoredKey> {
+    return this.withLock(async () => {
+      const data = await this.load();
+      const entry = data.keys[kind];
+      if (entry) {
+        return { keyId: entry.key_id, privateKey: fromBase64(entry.private_key_b64) };
+      }
+      const created = await factory();
+      data.keys[kind] = {
+        key_id: created.keyId,
+        private_key_b64: toBase64(created.privateKey),
+      };
+      await this.writeLocked(data);
+      return created;
     });
   }
 }

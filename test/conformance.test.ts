@@ -61,20 +61,37 @@ const files = existsSync(VECTORS_DIR)
   ? readdirSync(VECTORS_DIR).filter((f) => f.endsWith(".json"))
   : [];
 
+/** Sections of a vector that actually assert something. */
+const SECTIONS = ["aad", "commitment", "binding", "envelope"] as const;
+
+const fileVectors = files.map((file) => {
+  const parsed = JSON.parse(readFileSync(join(VECTORS_DIR, file), "utf8"));
+  if (!Array.isArray(parsed)) {
+    throw new Error(`vector file ${file} must hold a JSON array of vectors`);
+  }
+  return { file, vectors: parsed as ConformanceVector[] };
+});
+
+/**
+ * Count ASSERTING sections, not files (issue #9): `echo "[]" > vectors.json` — or a file of
+ * vectors with no known section — must fail, not pass green with zero conformance running.
+ */
+const totalChecks = fileVectors.reduce(
+  (n, { vectors }) =>
+    n + vectors.reduce((m, v) => m + SECTIONS.filter((s) => v[s] != null).length, 0),
+  0,
+);
+
 describe("conformance vectors (Rust oracle, engines#591)", () => {
-  it("at least one vector file is present (the guard fails closed)", () => {
+  it("at least one asserting vector section is present (the guard fails closed)", () => {
     expect(
-      files.length,
-      "test/vectors/ holds no *.json — the anti-drift guard would be inert. " +
+      totalChecks,
+      "test/vectors/ holds no asserting vectors — the anti-drift guard would be inert. " +
         "Restore the vectors or regenerate them from the Rust oracle (engines#591).",
     ).toBeGreaterThan(0);
   });
 
-  for (const file of files) {
-    const vectors = JSON.parse(
-      readFileSync(join(VECTORS_DIR, file), "utf8"),
-    ) as ConformanceVector[];
-
+  for (const { file, vectors } of fileVectors) {
     for (const v of vectors) {
       describe(`${file} :: ${v.name}`, () => {
         if (v.aad) {
