@@ -1,0 +1,241 @@
+[
+  {
+    "aad": {
+      "commitment": "a055f502809335462e771de15e491ade0faac01765f24fe1b3dba6a5185e53b8",
+      "content_type": "text/plain",
+      "dfid": "DFID-DEFARM-BR-2026-000001-000001",
+      "event_id": "11111111-2222-3333-4444-555555555555",
+      "expected": "{\"alg\":\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\",\"commitment\":\"a055f502809335462e771de15e491ade0faac01765f24fe1b3dba6a5185e53b8\",\"content_type\":\"text/plain\",\"dfid\":\"DFID-DEFARM-BR-2026-000001-000001\",\"event_id\":\"11111111-2222-3333-4444-555555555555\",\"field_path\":\"preco_venda\",\"field_schema\":\"defarm.sealed_field.v1\",\"schema\":\"defarm.sealed_aad.v1\"}",
+      "field_path": "preco_venda"
+    },
+    "binding": {
+      "enc_key_id": "enc-frigo",
+      "enc_pubkey_b64": "X9R2M7XkP8p7rRv75CT+rLF12dTUow8Wbb0wY28LRGs=",
+      "expected_canonical": "{\"enc_key_id\":\"enc-frigo\",\"enc_pubkey_b64\":\"X9R2M7XkP8p7rRv75CT+rLF12dTUow8Wbb0wY28LRGs=\",\"schema\":\"defarm.encryption_key_binding.v1\",\"workspace_id\":\"ws-frigo\"}",
+      "sig_b64": "9Etbf5kPUeK0ZnSIODra7fXNgDRzYhQkMOHmkXx/QxvVAVj6HgvmKrI3YByhAfmBbgvMkWH9tvxwDkOPxuLkAg==",
+      "signing_pubkey_b64": "Zr5+Myx6RTMyvZ0Kf32wVfXF7xoGraZtmLOftoEMRzo=",
+      "workspace_id": "ws-frigo"
+    },
+    "envelope": {
+      "expected_signing_string": "{\"aad\":\"{\\\"alg\\\":\\\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\\\",\\\"commitment\\\":\\\"a055f502809335462e771de15e491ade0faac01765f24fe1b3dba6a5185e53b8\\\",\\\"content_type\\\":\\\"text/plain\\\",\\\"dfid\\\":\\\"DFID-DEFARM-BR-2026-000001-000001\\\",\\\"event_id\\\":\\\"11111111-2222-3333-4444-555555555555\\\",\\\"field_path\\\":\\\"preco_venda\\\",\\\"field_schema\\\":\\\"defarm.sealed_field.v1\\\",\\\"schema\\\":\\\"defarm.sealed_aad.v1\\\"}\",\"alg\":\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\",\"ciphertext_b64\":\"LIifNZWvfbjLY9AOEJoqV/ySs3aEv6UvPGrW577xsCeYXBSBcFX6\",\"commitment_sha256\":\"a055f502809335462e771de15e491ade0faac01765f24fe1b3dba6a5185e53b8\",\"content_type\":\"text/plain\",\"dfid\":\"DFID-DEFARM-BR-2026-000001-000001\",\"event_id\":\"11111111-2222-3333-4444-555555555555\",\"field_path\":\"preco_venda\",\"schema\":\"defarm.sealed_field.v1\",\"sealer_key_id\":\"sign-produtor\",\"sealer_sig_alg\":\"ed25519_jcs_v1\",\"sealer_workspace_id\":\"ws-produtor\",\"wraps\":[{\"hpke_enc_b64\":\"MzZMdfZNWrb4KTDVaHiPFN09TUfU2+Ppu/UXyys5ngg=\",\"kid_fingerprint\":\"sha256:a3ab38441d3ed6d2af1d75fc22e59768b91f9565bcc3c9dbc077093ce5861231\",\"recipient_enc_key_id\":\"enc-frigo\",\"recipient_workspace_id\":\"ws-frigo\",\"wrapped_dk_b64\":\"ZAT7ep4Dkbiw2j9vttvMCNEA9/9BIpDZ9DuyT/yozCfH/JwWIJQbGX8Bgxd40NUr\"}]}",
+      "recipients": [
+        {
+          "enc_key_id": "enc-frigo",
+          "expected_plaintext_b64": "UiQgOC41MDAsMDA=",
+          "privkey_b64": "iWYVFh1cTatr6Zu2mxgPIshusKwbiRLpWO1d0IgTVzs="
+        }
+      ],
+      "sealed_field": {
+        "aad": "{\"alg\":\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\",\"commitment\":\"a055f502809335462e771de15e491ade0faac01765f24fe1b3dba6a5185e53b8\",\"content_type\":\"text/plain\",\"dfid\":\"DFID-DEFARM-BR-2026-000001-000001\",\"event_id\":\"11111111-2222-3333-4444-555555555555\",\"field_path\":\"preco_venda\",\"field_schema\":\"defarm.sealed_field.v1\",\"schema\":\"defarm.sealed_aad.v1\"}",
+        "alg": "HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305",
+        "ciphertext_b64": "LIifNZWvfbjLY9AOEJoqV/ySs3aEv6UvPGrW577xsCeYXBSBcFX6",
+        "commitment_sha256": "a055f502809335462e771de15e491ade0faac01765f24fe1b3dba6a5185e53b8",
+        "content_type": "text/plain",
+        "dfid": "DFID-DEFARM-BR-2026-000001-000001",
+        "event_id": "11111111-2222-3333-4444-555555555555",
+        "field_path": "preco_venda",
+        "schema": "defarm.sealed_field.v1",
+        "sealer_key_id": "sign-produtor",
+        "sealer_sig_alg": "ed25519_jcs_v1",
+        "sealer_sig_b64": "lMvYNX6OKTjrOMt78DF7Sq2PIXu++3lHcXlirj6mDnFTQD1TjakCj+ROG7IQ/mpNDperu9CmTybu1Yp+sVQ2Dg==",
+        "sealer_workspace_id": "ws-produtor",
+        "wraps": [
+          {
+            "hpke_enc_b64": "MzZMdfZNWrb4KTDVaHiPFN09TUfU2+Ppu/UXyys5ngg=",
+            "kid_fingerprint": "sha256:a3ab38441d3ed6d2af1d75fc22e59768b91f9565bcc3c9dbc077093ce5861231",
+            "recipient_enc_key_id": "enc-frigo",
+            "recipient_workspace_id": "ws-frigo",
+            "wrapped_dk_b64": "ZAT7ep4Dkbiw2j9vttvMCNEA9/9BIpDZ9DuyT/yozCfH/JwWIJQbGX8Bgxd40NUr"
+          }
+        ]
+      },
+      "sealer_signing_pubkey_b64": "/RckOFqgx1tk+3jNYC+h2ZH96/drE8WO1wLqyDXp9hg="
+    },
+    "name": "envelope-basico-1-destinatario"
+  },
+  {
+    "envelope": {
+      "expected_signing_string": "{\"aad\":\"{\\\"alg\\\":\\\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\\\",\\\"commitment\\\":\\\"e3162737dea496bb6d2c3627d23276b0a357ba4f570acd4cdf906018a0326c21\\\",\\\"content_type\\\":\\\"text/plain\\\",\\\"dfid\\\":\\\"DFID-DEFARM-BR-2026-000003-000003\\\",\\\"event_id\\\":\\\"33333333-4444-5555-6666-777777777777\\\",\\\"field_path\\\":\\\"laudo_sanitario\\\",\\\"field_schema\\\":\\\"defarm.sealed_field.v1\\\",\\\"schema\\\":\\\"defarm.sealed_aad.v1\\\"}\",\"alg\":\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\",\"ciphertext_b64\":\"+sZ2YJEdTDs3juyE6PphroFh+wtKi/knSpbSfuOhkSqMlJDZeNS5l3ufsIM=\",\"commitment_sha256\":\"e3162737dea496bb6d2c3627d23276b0a357ba4f570acd4cdf906018a0326c21\",\"content_type\":\"text/plain\",\"dfid\":\"DFID-DEFARM-BR-2026-000003-000003\",\"event_id\":\"33333333-4444-5555-6666-777777777777\",\"field_path\":\"laudo_sanitario\",\"schema\":\"defarm.sealed_field.v1\",\"sealer_key_id\":\"sign-produtor\",\"sealer_sig_alg\":\"ed25519_jcs_v1\",\"sealer_workspace_id\":\"ws-produtor\",\"wraps\":[{\"hpke_enc_b64\":\"D3PbF1B3IQ8oh2Ot3KxikLqHlPrFSNmB1u0GW1r2pDc=\",\"kid_fingerprint\":\"sha256:56bb90260acacf6fe54c2f4a0626161941b57eb7b8f41b4611494ca1d5bb853b\",\"recipient_enc_key_id\":\"enc-a\",\"recipient_workspace_id\":\"ws-a\",\"wrapped_dk_b64\":\"bjklJxU/bNS5bPOz7KgVtyjOnFHV5TlIBoEibNJGR2rVICD8W8MvcCwfEtJZKS/J\"},{\"hpke_enc_b64\":\"WtnP1uhFsDIxFFmttUw91Hb/2DqC5nC3HgC7ISql+kg=\",\"kid_fingerprint\":\"sha256:9d10395824f92747922ac65a63a50f74e85b5a5005373f6108833266f3c7a2b4\",\"recipient_enc_key_id\":\"enc-b\",\"recipient_workspace_id\":\"ws-b\",\"wrapped_dk_b64\":\"Emj/Kr2qMp6zXaqObYIAZ55aMO4YMLBmx6mSvSeceUSGV79h4dBRGw85EdkwaTBS\"},{\"hpke_enc_b64\":\"eiS7YyyrYGV2+LrwVH8E9H3+v8QOc/ot3R63V0nUVHo=\",\"kid_fingerprint\":\"sha256:1f6e0242bd85eb22e3f423fd1b6c1a85f7dfc7174850d553fa4cf104dbbbfd55\",\"recipient_enc_key_id\":\"enc-c\",\"recipient_workspace_id\":\"ws-c\",\"wrapped_dk_b64\":\"31w+zX4ziPv5RRmbD5+vBXZnlIFSpoQS46h/KQxodhnMp/ePnQesL8R/DYSnWJO3\"}]}",
+      "recipients": [
+        {
+          "enc_key_id": "enc-c",
+          "expected_plaintext_b64": "YWZ0b3NhOiBuZWdhdGl2bw==",
+          "privkey_b64": "tSJopbC5OcmyLtuYbwmWh3oL+HUkp/Jn/RDxPHSNZ90="
+        },
+        {
+          "enc_key_id": "enc-a",
+          "expected_plaintext_b64": "YWZ0b3NhOiBuZWdhdGl2bw==",
+          "privkey_b64": "jdxXP2VrVxGaIHgKcIeuHeXyahG9JaJDIHn/w/VgTPU="
+        },
+        {
+          "enc_key_id": "enc-b",
+          "expected_plaintext_b64": "YWZ0b3NhOiBuZWdhdGl2bw==",
+          "privkey_b64": "Fv6Wec6JDAiI4AqsV3qbmtysvEwELsXdjrKVhzTln5s="
+        }
+      ],
+      "sealed_field": {
+        "aad": "{\"alg\":\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\",\"commitment\":\"e3162737dea496bb6d2c3627d23276b0a357ba4f570acd4cdf906018a0326c21\",\"content_type\":\"text/plain\",\"dfid\":\"DFID-DEFARM-BR-2026-000003-000003\",\"event_id\":\"33333333-4444-5555-6666-777777777777\",\"field_path\":\"laudo_sanitario\",\"field_schema\":\"defarm.sealed_field.v1\",\"schema\":\"defarm.sealed_aad.v1\"}",
+        "alg": "HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305",
+        "ciphertext_b64": "+sZ2YJEdTDs3juyE6PphroFh+wtKi/knSpbSfuOhkSqMlJDZeNS5l3ufsIM=",
+        "commitment_sha256": "e3162737dea496bb6d2c3627d23276b0a357ba4f570acd4cdf906018a0326c21",
+        "content_type": "text/plain",
+        "dfid": "DFID-DEFARM-BR-2026-000003-000003",
+        "event_id": "33333333-4444-5555-6666-777777777777",
+        "field_path": "laudo_sanitario",
+        "schema": "defarm.sealed_field.v1",
+        "sealer_key_id": "sign-produtor",
+        "sealer_sig_alg": "ed25519_jcs_v1",
+        "sealer_sig_b64": "OjgoafkFbP/02aWVk0OZUzT7f0UX4i1wkoQkwoA/M8OKWCDoA7uJbx4wcjIwSki0bZIxngFvJJZ9nYhpOGV0BA==",
+        "sealer_workspace_id": "ws-produtor",
+        "wraps": [
+          {
+            "hpke_enc_b64": "eiS7YyyrYGV2+LrwVH8E9H3+v8QOc/ot3R63V0nUVHo=",
+            "kid_fingerprint": "sha256:1f6e0242bd85eb22e3f423fd1b6c1a85f7dfc7174850d553fa4cf104dbbbfd55",
+            "recipient_enc_key_id": "enc-c",
+            "recipient_workspace_id": "ws-c",
+            "wrapped_dk_b64": "31w+zX4ziPv5RRmbD5+vBXZnlIFSpoQS46h/KQxodhnMp/ePnQesL8R/DYSnWJO3"
+          },
+          {
+            "hpke_enc_b64": "D3PbF1B3IQ8oh2Ot3KxikLqHlPrFSNmB1u0GW1r2pDc=",
+            "kid_fingerprint": "sha256:56bb90260acacf6fe54c2f4a0626161941b57eb7b8f41b4611494ca1d5bb853b",
+            "recipient_enc_key_id": "enc-a",
+            "recipient_workspace_id": "ws-a",
+            "wrapped_dk_b64": "bjklJxU/bNS5bPOz7KgVtyjOnFHV5TlIBoEibNJGR2rVICD8W8MvcCwfEtJZKS/J"
+          },
+          {
+            "hpke_enc_b64": "WtnP1uhFsDIxFFmttUw91Hb/2DqC5nC3HgC7ISql+kg=",
+            "kid_fingerprint": "sha256:9d10395824f92747922ac65a63a50f74e85b5a5005373f6108833266f3c7a2b4",
+            "recipient_enc_key_id": "enc-b",
+            "recipient_workspace_id": "ws-b",
+            "wrapped_dk_b64": "Emj/Kr2qMp6zXaqObYIAZ55aMO4YMLBmx6mSvSeceUSGV79h4dBRGw85EdkwaTBS"
+          }
+        ]
+      },
+      "sealer_signing_pubkey_b64": "/RckOFqgx1tk+3jNYC+h2ZH96/drE8WO1wLqyDXp9hg="
+    },
+    "name": "envelope-3-destinatarios-fora-de-ordem"
+  },
+  {
+    "envelope": {
+      "expected_signing_string": "{\"aad\":\"{\\\"alg\\\":\\\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\\\",\\\"commitment\\\":\\\"2545aeef158f232e15ee69d7d4ade8331ded728b3fdfa9bdff62bda73ea85fad\\\",\\\"content_type\\\":\\\"application/json\\\",\\\"dfid\\\":\\\"DFID-DEFARM-BR-2026-000004-000004\\\",\\\"event_id\\\":\\\"44444444-5555-6666-7777-888888888888\\\",\\\"field_path\\\":\\\"genética\\\",\\\"field_schema\\\":\\\"defarm.sealed_field.v1\\\",\\\"schema\\\":\\\"defarm.sealed_aad.v1\\\"}\",\"alg\":\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\",\"ciphertext_b64\":\"gyHpx4nh7vM7bfzXyIdqsagnVexOl9jPyRFWobH06LyLZBpZvnDA7AcDf5wT6JpvQQWwX4XvxXew0YTGuSZcr4CWUA==\",\"commitment_sha256\":\"2545aeef158f232e15ee69d7d4ade8331ded728b3fdfa9bdff62bda73ea85fad\",\"content_type\":\"application/json\",\"dfid\":\"DFID-DEFARM-BR-2026-000004-000004\",\"event_id\":\"44444444-5555-6666-7777-888888888888\",\"field_path\":\"genética\",\"schema\":\"defarm.sealed_field.v1\",\"sealer_key_id\":\"sign-produtor\",\"sealer_sig_alg\":\"ed25519_jcs_v1\",\"sealer_workspace_id\":\"ws-produtor\",\"wraps\":[{\"hpke_enc_b64\":\"M061uTip20wOg7xQk+FsdOc5w0x/+Ax4aofo/liWLAE=\",\"kid_fingerprint\":\"sha256:a3ab38441d3ed6d2af1d75fc22e59768b91f9565bcc3c9dbc077093ce5861231\",\"recipient_enc_key_id\":\"enc-frigo\",\"recipient_workspace_id\":\"ws-frigo\",\"wrapped_dk_b64\":\"J35l1QfrXNPsZkEYtBezwgli4YfAQk+rU8xXlRu99Z1YUrRutLhKHZM4MFQudBnn\"}]}",
+      "recipients": [
+        {
+          "enc_key_id": "enc-frigo",
+          "expected_plaintext_b64": "eyJyYcOnYSI6Ik5lbG9yZSDwn5CCIiwicHJlw6dvIjo4NTAwLjV9",
+          "privkey_b64": "iWYVFh1cTatr6Zu2mxgPIshusKwbiRLpWO1d0IgTVzs="
+        }
+      ],
+      "sealed_field": {
+        "aad": "{\"alg\":\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\",\"commitment\":\"2545aeef158f232e15ee69d7d4ade8331ded728b3fdfa9bdff62bda73ea85fad\",\"content_type\":\"application/json\",\"dfid\":\"DFID-DEFARM-BR-2026-000004-000004\",\"event_id\":\"44444444-5555-6666-7777-888888888888\",\"field_path\":\"genética\",\"field_schema\":\"defarm.sealed_field.v1\",\"schema\":\"defarm.sealed_aad.v1\"}",
+        "alg": "HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305",
+        "ciphertext_b64": "gyHpx4nh7vM7bfzXyIdqsagnVexOl9jPyRFWobH06LyLZBpZvnDA7AcDf5wT6JpvQQWwX4XvxXew0YTGuSZcr4CWUA==",
+        "commitment_sha256": "2545aeef158f232e15ee69d7d4ade8331ded728b3fdfa9bdff62bda73ea85fad",
+        "content_type": "application/json",
+        "dfid": "DFID-DEFARM-BR-2026-000004-000004",
+        "event_id": "44444444-5555-6666-7777-888888888888",
+        "field_path": "genética",
+        "schema": "defarm.sealed_field.v1",
+        "sealer_key_id": "sign-produtor",
+        "sealer_sig_alg": "ed25519_jcs_v1",
+        "sealer_sig_b64": "uyYCom+owjQvBW5H9Av1a1Hs3po+Tg/hyACq59smIBc+SOwqkOBTcA9q03lUsElExmAasu/QIRpWp8gaoZvkBg==",
+        "sealer_workspace_id": "ws-produtor",
+        "wraps": [
+          {
+            "hpke_enc_b64": "M061uTip20wOg7xQk+FsdOc5w0x/+Ax4aofo/liWLAE=",
+            "kid_fingerprint": "sha256:a3ab38441d3ed6d2af1d75fc22e59768b91f9565bcc3c9dbc077093ce5861231",
+            "recipient_enc_key_id": "enc-frigo",
+            "recipient_workspace_id": "ws-frigo",
+            "wrapped_dk_b64": "J35l1QfrXNPsZkEYtBezwgli4YfAQk+rU8xXlRu99Z1YUrRutLhKHZM4MFQudBnn"
+          }
+        ]
+      },
+      "sealer_signing_pubkey_b64": "/RckOFqgx1tk+3jNYC+h2ZH96/drE8WO1wLqyDXp9hg="
+    },
+    "name": "conteudo-json-unicode"
+  },
+  {
+    "api_response": {
+      "expected_local_authorship": true,
+      "expected_plaintext_b64": "UiQgOC41MDAsMDA=",
+      "recipient_privkey_b64": "iWYVFh1cTatr6Zu2mxgPIshusKwbiRLpWO1d0IgTVzs=",
+      "recipient_sealed_field": {
+        "authorship_verified": true,
+        "commitment_alg": "hmac-sha256/hkdf-sha256",
+        "commitment_value": "a055f502809335462e771de15e491ade0faac01765f24fe1b3dba6a5185e53b8",
+        "content_type": "text/plain",
+        "dfid": "DFID-DEFARM-BR-2026-000001-000001",
+        "event_id": "0a0a0a0a-0b0b-0c0c-0d0d-0e0e0e0e0e0e",
+        "event_type": "item_updated",
+        "field_path": "preco_venda",
+        "occurred_at": "2026-08-20T12:00:00Z",
+        "recipient_enc_key_id": "enc-frigo",
+        "sealed_field": {
+          "aad": "{\"alg\":\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\",\"commitment\":\"a055f502809335462e771de15e491ade0faac01765f24fe1b3dba6a5185e53b8\",\"content_type\":\"text/plain\",\"dfid\":\"DFID-DEFARM-BR-2026-000001-000001\",\"event_id\":\"11111111-2222-3333-4444-555555555555\",\"field_path\":\"preco_venda\",\"field_schema\":\"defarm.sealed_field.v1\",\"schema\":\"defarm.sealed_aad.v1\"}",
+          "alg": "HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305",
+          "ciphertext_b64": "LIifNZWvfbjLY9AOEJoqV/ySs3aEv6UvPGrW577xsCeYXBSBcFX6",
+          "commitment_sha256": "a055f502809335462e771de15e491ade0faac01765f24fe1b3dba6a5185e53b8",
+          "content_type": "text/plain",
+          "dfid": "DFID-DEFARM-BR-2026-000001-000001",
+          "event_id": "11111111-2222-3333-4444-555555555555",
+          "field_path": "preco_venda",
+          "schema": "defarm.sealed_field.v1",
+          "sealer_key_id": "sign-produtor",
+          "sealer_sig_alg": "ed25519_jcs_v1",
+          "sealer_sig_b64": "lMvYNX6OKTjrOMt78DF7Sq2PIXu++3lHcXlirj6mDnFTQD1TjakCj+ROG7IQ/mpNDperu9CmTybu1Yp+sVQ2Dg==",
+          "sealer_workspace_id": "ws-produtor",
+          "wraps": [
+            {
+              "hpke_enc_b64": "MzZMdfZNWrb4KTDVaHiPFN09TUfU2+Ppu/UXyys5ngg=",
+              "kid_fingerprint": "sha256:a3ab38441d3ed6d2af1d75fc22e59768b91f9565bcc3c9dbc077093ce5861231",
+              "recipient_enc_key_id": "enc-frigo",
+              "recipient_workspace_id": "ws-frigo",
+              "wrapped_dk_b64": "ZAT7ep4Dkbiw2j9vttvMCNEA9/9BIpDZ9DuyT/yozCfH/JwWIJQbGX8Bgxd40NUr"
+            }
+          ]
+        },
+        "sealer_key_id": "sign-produtor",
+        "sealer_public_key_b64": "/RckOFqgx1tk+3jNYC+h2ZH96/drE8WO1wLqyDXp9hg=",
+        "sealer_workspace_id": "ws-produtor"
+      }
+    },
+    "name": "api-response-do-serializer"
+  },
+  {
+    "envelope": {
+      "expected_signing_string": "{\"aad\":\"{\\\"alg\\\":\\\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\\\",\\\"commitment\\\":\\\"186fc013c8bda98a976d2e34966cd262506a6b618398ab9fbe9749a1eefff135\\\",\\\"content_type\\\":\\\"text/plain\\\",\\\"dfid\\\":\\\"DFID-DEFARM-BR-2026-000005-000005\\\",\\\"event_id\\\":\\\"55555555-6666-7777-8888-999999999999\\\",\\\"field_path\\\":\\\"preco_venda\\\",\\\"field_schema\\\":\\\"defarm.sealed_field.v1\\\",\\\"schema\\\":\\\"defarm.sealed_aad.v1\\\"}\",\"alg\":\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\",\"ciphertext_b64\":\"65IOfBiVuM5VLvgYBehg67N1SODQqqjnJxeQWnwt3MZfHUQS/I9C\",\"commitment_sha256\":\"186fc013c8bda98a976d2e34966cd262506a6b618398ab9fbe9749a1eefff135\",\"content_type\":\"text/plain\",\"dfid\":\"DFID-DEFARM-BR-2026-000005-000005\",\"event_id\":\"55555555-6666-7777-8888-999999999999\",\"field_path\":\"preco_venda\",\"schema\":\"defarm.sealed_field.v1\",\"sealer_key_id\":\"sign-produtor\",\"sealer_sig_alg\":\"ed25519_jcs_v1\",\"sealer_workspace_id\":\"ws-produtor\",\"wraps\":[{\"hpke_enc_b64\":\"COErFj6pOK+dFplUcS8/xXTai5gkolTF965S3ekkoVs=\",\"kid_fingerprint\":\"sha256:35cd813628140e2d58aa5f98f9aad76e9831bbf1559cc5c8775128521797ed00\",\"recipient_enc_key_id\":\"enc-ts\",\"recipient_workspace_id\":\"ws-ts\",\"wrapped_dk_b64\":\"8Eu8aReiNyF0+ZTcChTkPIwY2Q5wWe0yNBkCzAqvvhiBew1mmWWe9SzVuherda3j\"}]}",
+      "recipients": [
+        {
+          "enc_key_id": "enc-ts",
+          "expected_plaintext_b64": "UiQgOC41MDAsMDA=",
+          "privkey_b64": "62gyAJmn5R3ByNiZ3XQ00qpGr+VWiBPQ9ZHoZNpJUXw="
+        }
+      ],
+      "sealed_field": {
+        "aad": "{\"alg\":\"HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305\",\"commitment\":\"186fc013c8bda98a976d2e34966cd262506a6b618398ab9fbe9749a1eefff135\",\"content_type\":\"text/plain\",\"dfid\":\"DFID-DEFARM-BR-2026-000005-000005\",\"event_id\":\"55555555-6666-7777-8888-999999999999\",\"field_path\":\"preco_venda\",\"field_schema\":\"defarm.sealed_field.v1\",\"schema\":\"defarm.sealed_aad.v1\"}",
+        "alg": "HPKE-v1-X25519-HKDF-SHA256-ChaCha20Poly1305",
+        "ciphertext_b64": "65IOfBiVuM5VLvgYBehg67N1SODQqqjnJxeQWnwt3MZfHUQS/I9C",
+        "commitment_sha256": "186fc013c8bda98a976d2e34966cd262506a6b618398ab9fbe9749a1eefff135",
+        "content_type": "text/plain",
+        "dfid": "DFID-DEFARM-BR-2026-000005-000005",
+        "event_id": "55555555-6666-7777-8888-999999999999",
+        "field_path": "preco_venda",
+        "schema": "defarm.sealed_field.v1",
+        "sealer_key_id": "sign-produtor",
+        "sealer_sig_alg": "ed25519_jcs_v1",
+        "sealer_sig_b64": "v2gmOen/mcggSM+pBpcf5eyvEooV0rDu+DcyDAxxCF9RjwVTFKCp2cxjUDQIOOPnQJj8f4RieCEBMoX4ZtzPBg==",
+        "sealer_workspace_id": "ws-produtor",
+        "wraps": [
+          {
+            "hpke_enc_b64": "COErFj6pOK+dFplUcS8/xXTai5gkolTF965S3ekkoVs=",
+            "kid_fingerprint": "sha256:35cd813628140e2d58aa5f98f9aad76e9831bbf1559cc5c8775128521797ed00",
+            "recipient_enc_key_id": "enc-ts",
+            "recipient_workspace_id": "ws-ts",
+            "wrapped_dk_b64": "8Eu8aReiNyF0+ZTcChTkPIwY2Q5wWe0yNBkCzAqvvhiBew1mmWWe9SzVuherda3j"
+          }
+        ]
+      },
+      "sealer_signing_pubkey_b64": "/RckOFqgx1tk+3jNYC+h2ZH96/drE8WO1wLqyDXp9hg="
+    },
+    "name": "cross-key-chave-gerada-pelo-sdk"
+  }
+]

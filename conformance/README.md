@@ -1,17 +1,12 @@
-# Gerador de vetores (rascunho do engines#591)
+# Gerador de vetores (engines#591)
 
-`ts_conformance_vector_gen.rs` é o RASCUNHO do gerador de vetores de conformidade — ele **pertence
-ao repo engines** (`item-registry/tests/`), não a este: o Rust é o oráculo do formato, então o
-gerador tem de viver e evoluir junto com `sealed_field.rs`. A cópia aqui é referência/documentação
-até o PR do engines#591 ser aberto e mergeado.
+`ts_conformance_vector_gen.rs` **pertence ao repo engines** (`item-registry/tests/`) — o Rust é
+o oráculo do formato, então o gerador vive e evolui junto com `sealed_field.rs`. PR canônico:
+**engines#606**. A cópia aqui é referência/espelho para quem audita o SDK sem acesso ao engines;
+em divergência, o engines manda.
 
-Como o vetor `../test/vectors/rust-oracle-draft.json` foi gerado (2026-08-20, engines @ da23e845):
+Como regenerar `../test/vectors/rust-oracle.json` — ver `../test/vectors/README.md` (inclui o
+passo opcional do vetor cross-key, com o par X25519 gerado por este SDK).
 
-```bash
-# num worktree do engines com este arquivo em item-registry/tests/
-VECTOR_OUT=/tmp/vectors.json SQLX_OFFLINE=true \
-  cargo test -p item-registry --test ts_conformance_vector_gen -- --nocapture
-```
-
-As chaves privadas dentro do vetor são FIXTURES derivadas de seeds constantes (`[7u8;32]`,
-`[9u8;32]`, `[11u8;32]`) — descartáveis por construção, jamais chaves reais.
+As chaves privadas dentro dos vetores são FIXTURES (seeds determinísticas ou pares descartáveis
+gerados só pro vetor) — jamais chaves reais.
