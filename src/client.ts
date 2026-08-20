@@ -408,13 +408,7 @@ export class DefarmClient {
 
     const raw = await openField(match.sealed_field, enc.keyId, enc.privateKey);
 
-    let sealerSignatureVerifiedLocally: boolean | null = null;
-    if (match.sealer_signing_pubkey_b64) {
-      sealerSignatureVerifiedLocally = verifySealerSignature(
-        match.sealed_field,
-        match.sealer_signing_pubkey_b64,
-      );
-    }
+    const sealerSignatureVerifiedLocally = localAuthorshipCheck(match);
 
     const text = fromUtf8(raw);
     const value = match.content_type === "application/json" ? JSON.parse(text) : text;
@@ -537,6 +531,18 @@ export class DefarmClient {
   revoke(): never {
     throw new NotImplementedError("revoke", "engines#574/#584");
   }
+}
+
+/**
+ * Re-run the sealer-signature verification LOCALLY, against the public key the server returned
+ * (`sealer_public_key_b64` — name pinned to the Rust struct). This is the point of the whole
+ * architecture: the integrator does not have to trust the server's `authorship_verified` boolean.
+ * Returns `null` only when the server sent no key (none was valid at event time) — never
+ * silently. Exported so the contract is testable without HTTP (`test/api-shape.test.ts`).
+ */
+export function localAuthorshipCheck(field: RecipientSealedField): boolean | null {
+  if (!field.sealer_public_key_b64) return null;
+  return verifySealerSignature(field.sealed_field, field.sealer_public_key_b64);
 }
 
 /** File keystore that resolves its default path on first use (keeps the constructor sync). */

@@ -10,7 +10,16 @@ export interface UserInfo {
   [k: string]: unknown;
 }
 
-/** One sealed field addressed to the calling workspace (`GET /v1/workspace/sealed-fields`). */
+/**
+ * One sealed field addressed to the calling workspace (`GET /v1/workspace/sealed-fields`).
+ *
+ * Field names are PINNED to the Rust `RecipientSealedField` struct in
+ * `engines .../item-registry/src/api/trust_encryption_keys.rs` — never invent or "improve" a
+ * name here: a wrong name makes an optional check silently vanish instead of failing (that is
+ * exactly how PR#1's blocker was born — the local authorship re-verification never ran because
+ * this type guessed `sealer_signing_pubkey_b64` for what the server calls
+ * `sealer_public_key_b64`). `test/api-shape.test.ts` guards this contract.
+ */
 export interface RecipientSealedField {
   dfid: string;
   event_id: string;
@@ -26,8 +35,14 @@ export interface RecipientSealedField {
   sealer_key_id: string;
   /** Server-side re-verification of the sealer signature against the trusted key valid at event time. */
   authorship_verified: boolean;
-  /** The Ed25519 public key the authorship was verified against — so the client can re-run it itself. */
-  sealer_signing_pubkey_b64?: string | null;
+  /**
+   * The Ed25519 public key the authorship was verified against — so the client can re-run the
+   * verification itself instead of trusting the server's boolean. `null` = no key was valid at
+   * event time.
+   */
+  sealer_public_key_b64?: string | null;
+  commitment_alg?: string;
+  commitment_value?: string;
   [k: string]: unknown;
 }
 
