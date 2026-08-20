@@ -12,17 +12,18 @@ import {
   verifyEncKeyBinding,
   verifySealerSignature,
 } from "../src/core/index.js";
+import { localAuthorshipCheck } from "../src/client.js";
+import type { RecipientSealedField } from "../src/api/types.js";
 import type { SealedField } from "../src/core/envelope.js";
 
 /**
  * Cross-language conformance vectors (engines#591). The Rust implementation is the ORACLE:
- * it generates `vectors/*.json` with fixed inputs and the exact expected outputs (canonical
- * strings, commitments, envelopes, signatures). This suite replays them and demands byte
- * equality. NO language implementation ships to production without this green.
+ * `item-registry/tests/ts_conformance_vector_gen.rs` generates `vectors/*.json` with fixed
+ * inputs and the exact expected outputs. This suite replays them and demands byte equality.
+ * NO language implementation ships to production without this green.
  *
- * FAIL CLOSED (issue #2): a run without vector files FAILS. A missing directory, a stray
- * .gitignore, or a build step that drops fixtures must break CI — never turn the anti-drift
- * guard silently inert while everything stays green.
+ * FAIL CLOSED (issues #2 and #9): the guard counts ASSERTING SECTIONS, not files — an empty
+ * directory, `[]`, or vectors with no known section must fail, never pass green.
  */
 const VECTORS_DIR = join(dirname(fileURLToPath(import.meta.url)), "vectors");
 
@@ -46,23 +47,35 @@ interface ConformanceVector {
     sig_b64?: string;
     signing_pubkey_b64?: string;
   };
-  /** A full envelope sealed by Rust: TS must open it and verify its signature. */
+  /** A full envelope sealed by Rust: TS must open it (every listed recipient) and verify its signature. */
   envelope?: {
     sealed_field: SealedField;
-    recipient_enc_key_id: string;
-    recipient_privkey_b64: string;
-    expected_plaintext_b64: string;
+    recipients: {
+      enc_key_id: string;
+      privkey_b64: string;
+      expected_plaintext_b64: string;
+    }[];
     sealer_signing_pubkey_b64: string;
     expected_signing_string: string;
   };
+  /**
+   * A `RecipientSealedField` serialized by the REAL Rust serializer (serde_json) — the SDK pins
+   * the API response field names here, not in prose (the sdk-ts#1 blocker class).
+   */
+  api_response?: {
+    recipient_sealed_field: RecipientSealedField;
+    recipient_privkey_b64: string;
+    expected_plaintext_b64: string;
+    expected_local_authorship: boolean;
+  };
 }
+
+/** Sections of a vector that actually assert something. */
+const SECTIONS = ["aad", "commitment", "binding", "envelope", "api_response"] as const;
 
 const files = existsSync(VECTORS_DIR)
   ? readdirSync(VECTORS_DIR).filter((f) => f.endsWith(".json"))
   : [];
-
-/** Sections of a vector that actually assert something. */
-const SECTIONS = ["aad", "commitment", "binding", "envelope"] as const;
 
 const fileVectors = files.map((file) => {
   const parsed = JSON.parse(readFileSync(join(VECTORS_DIR, file), "utf8"));
@@ -72,10 +85,6 @@ const fileVectors = files.map((file) => {
   return { file, vectors: parsed as ConformanceVector[] };
 });
 
-/**
- * Count ASSERTING sections, not files (issue #9): `echo "[]" > vectors.json` — or a file of
- * vectors with no known section — must fail, not pass green with zero conformance running.
- */
 const totalChecks = fileVectors.reduce(
   (n, { vectors }) =>
     n + vectors.reduce((m, v) => m + SECTIONS.filter((s) => v[s] != null).length, 0),
@@ -138,7 +147,7 @@ describe("conformance vectors (Rust oracle, engines#591)", () => {
           });
         }
         if (v.envelope) {
-          it("opens a Rust-sealed envelope and verifies its signature", async () => {
+          it("verifies the Rust-sealed envelope's signature and canonical string", () => {
             const e = v.envelope!;
             expect(canonicalSealerSigningString(e.sealed_field)).toBe(
               e.expected_signing_string,
@@ -146,12 +155,33 @@ describe("conformance vectors (Rust oracle, engines#591)", () => {
             expect(
               verifySealerSignature(e.sealed_field, e.sealer_signing_pubkey_b64),
             ).toBe(true);
+          });
+          it("every listed recipient opens to the exact plaintext", async () => {
+            const e = v.envelope!;
+            expect(e.recipients.length).toBeGreaterThan(0);
+            for (const r of e.recipients) {
+              const plaintext = await openField(
+                e.sealed_field,
+                r.enc_key_id,
+                fromBase64(r.privkey_b64),
+              );
+              expect(plaintext).toEqual(fromBase64(r.expected_plaintext_b64));
+            }
+          });
+        }
+        if (v.api_response) {
+          it("the serializer-shaped response drives local authorship + open (names pinned to the server)", async () => {
+            const a = v.api_response!;
+            const field = a.recipient_sealed_field;
+            // The whole point: the field names here came from serde_json over the Rust struct.
+            // If the SDK reads a wrong/invented name, this returns null and the test fails.
+            expect(localAuthorshipCheck(field)).toBe(a.expected_local_authorship);
             const plaintext = await openField(
-              e.sealed_field,
-              e.recipient_enc_key_id,
-              fromBase64(e.recipient_privkey_b64),
+              field.sealed_field,
+              field.recipient_enc_key_id,
+              fromBase64(a.recipient_privkey_b64),
             );
-            expect(plaintext).toEqual(fromBase64(e.expected_plaintext_b64));
+            expect(plaintext).toEqual(fromBase64(a.expected_plaintext_b64));
           });
         }
       });
