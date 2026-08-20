@@ -256,13 +256,31 @@ export class DefarmClient {
     return this.identity;
   }
 
-  /** POST that tolerates "already registered" (409) — what makes ensureKeys idempotent. */
-  private async registerTolerant(url: string, body: unknown): Promise<void> {
+  /**
+   * POST that tolerates "already registered" (409) — what makes ensureKeys idempotent. But a 409
+   * is only success if the key registered under this key_id has the SAME public key the local
+   * private key derives (issue #4): a restored backup, two machines sharing a key_id, or a race
+   * can leave the directory holding a different public key — then every seal addressed to this
+   * workspace is unopenable, with the error surfacing far from the cause (the engines#528 class:
+   * registers fine, breaks every later seal). On 409 we GET the registered key and compare;
+   * mismatch is a hard, named error — never a silent "ok".
+   */
+  private async registerTolerant(
+    url: string,
+    body: { key_id: string; public_key_b64: string; [k: string]: unknown },
+  ): Promise<void> {
     try {
       await this.http.request("POST", url, { body });
     } catch (e) {
-      if (e instanceof ApiError && e.status === 409) return;
-      throw e;
+      if (!(e instanceof ApiError) || e.status !== 409) throw e;
+      const registered = await this.http.request<
+        { key_id: string; public_key_b64: string }[]
+      >("GET", url);
+      const existing = registered.find((k) => k.key_id === body.key_id);
+      if (!existing) throw e; // 409 for some other reason — surface the original error
+      if (existing.public_key_b64.trim() !== body.public_key_b64.trim()) {
+        throw new KeyMismatchError(body.key_id);
+      }
     }
   }
 
