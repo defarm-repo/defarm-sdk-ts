@@ -1,0 +1,59 @@
+{
+  "name": "@defarm/sdk",
+  "version": "0.2.0-alpha.0",
+  "description": "DeFarm SDK — verifiable agri traceability with client-side sealing (blind envelopes). The DeFarm server never sees your keys or your sealed data.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/defarm-repo/defarm-sdk-ts.git"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@hpke/chacha20poly1305": "^1.6.1",
+    "@hpke/core": "^1.7.1",
+    "@hpke/dhkem-x25519": "^1.6.1",
+    "@noble/ciphers": "^1.2.1",
+    "@noble/curves": "^1.8.1",
+    "@noble/hashes": "^1.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  },
+  "keywords": [
+    "defarm",
+    "traceability",
+    "hpke",
+    "sealed-field",
+    "blind-envelope",
+    "stellar",
+    "agriculture"
+  ]
+}
