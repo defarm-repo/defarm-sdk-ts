@@ -39,10 +39,11 @@ beforeAll(async () => {
 
 afterAll(() => new Promise<void>((r) => server.close(() => r())));
 
-describe("defarm CLI", () => {
+// Each case spawns a tsx subprocess (~seconds under a loaded runner) — generous timeout.
+describe("defarm CLI", { timeout: 30_000 }, () => {
   it("no command → usage on stderr, exit 1", async () => {
-    await expect(cli([])).rejects.toMatchObject({ code: 1 });
-    const e = await cli([]).catch((err) => err as { stderr: string });
+    const e = await cli([]).catch((err) => err as { code: number; stderr: string });
+    expect(e.code).toBe(1);
     expect(e.stderr).toContain("Commands:");
   });
 
