@@ -40,7 +40,8 @@
     "example:04": "tsx examples/04-open.ts",
     "example:05": "tsx examples/05-visibility.ts",
     "example:06": "tsx examples/06-verify.ts",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "docs": "typedoc"
   },
   "dependencies": {
     "@hpke/chacha20poly1305": "^1.6.1",
@@ -53,6 +54,7 @@
   "devDependencies": {
     "@types/node": "^20.19.43",
     "tsx": "^4.23.12",
+    "typedoc": "^0.27.9",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   },

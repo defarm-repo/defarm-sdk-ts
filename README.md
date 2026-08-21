@@ -7,7 +7,7 @@ recipients you address can ever read them. The DeFarm server stores the sealed e
 
 > Don't trust DeFarm — audit this SDK. The crypto client is open source (MIT) precisely so that
 > an agency, a partner, or an auditor can read every line that touches a key. The pure crypto
-> lives in [`src/core/`](src/core/), free of network and I/O, and is held byte-for-byte to the
+> lives in [`src/core/`](https://github.com/defarm-repo/defarm-sdk-ts/tree/main/src/core), free of network and I/O, and is held byte-for-byte to the
 > Rust reference implementation by cross-language conformance vectors.
 
 ## The model in 30 seconds
@@ -25,6 +25,9 @@ recipients you address can ever read them. The DeFarm server stores the sealed e
   key gives zero decryption power. Private keys are generated locally and **never leave your
   side** — DeFarm is a key *directory*, not a key *authority*, and every public key it serves is
   re-verified here against its owner-signed binding before use.
+
+**API reference:** [defarm-repo.github.io/defarm-sdk-ts](https://defarm-repo.github.io/defarm-sdk-ts/) —
+generated from the code's TSDoc on every merge (no drift by construction).
 
 ## Install
 

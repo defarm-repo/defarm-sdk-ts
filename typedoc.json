@@ -1,0 +1,18 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/core/index.ts"],
+  "out": "docs-site",
+  "name": "@defarm/sdk",
+  "includeVersion": true,
+  "readme": "README.md",
+  "navigationLinks": {
+    "GitHub": "https://github.com/defarm-repo/defarm-sdk-ts",
+    "Examples": "https://github.com/defarm-repo/defarm-sdk-ts/tree/main/examples",
+    "MCP server": "https://github.com/defarm-repo/defarm-mcp",
+    "Verify without DeFarm": "https://github.com/defarm-repo/defarm-verify"
+  },
+  "categorizeByGroup": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "treatWarningsAsErrors": true
+}
