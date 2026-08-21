@@ -25,6 +25,18 @@ npm run example:06   # verifique-você-mesmo (sem conta, sem confiança)
 | `05-visibility` | 🔄 2 | membership gate o item, selo gate o campo; 404 uniforme |
 | `06-verify` | ✅ 5 + 🔍 7 | âncora + RFC3161 + commitment, sem confiar na DeFarm |
 
+## Pré-requisitos do ambiente (sem eles, os passos falham — e agora dizem o porquê)
+
+Verificados rodando a suíte inteira contra um ambiente real (review do PR #15):
+
+1. **02-ingest**: a API key precisa de um circuito de **staging de parceiro**
+   (`partner_staging=true`) — a rota oficial de ingestão recusa key criada pela rota comum.
+2. **03-seal**: o destinatário precisa ser **participante do circuito** antes de receber selo
+   (convite → aceite; o resolver de participantes exige membro ativo ou key ativa no circuito).
+3. **05/06**: as leituras ANÔNIMAS (`/public`, `/verify`) só retornam 200 pra item em circuito
+   **PÚBLICO**. Em circuito privado o retorno é o 404 uniforme — que é a regra funcionando, e o
+   05 explica isso em vez de morrer.
+
 ## ⛔ O que ainda não tem exemplo (bloqueado em backend — não fingimos)
 
 - **Conceder a um participante depois de selado** (re-wrap) — engines#584 → `grant()` lança

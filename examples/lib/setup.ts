@@ -17,7 +17,12 @@ export function env(name: string, fallback?: string): string {
   return v;
 }
 
-export const GATEWAY = env("DEFARM_GATEWAY", "https://staging.defarm.net");
+/**
+ * No fallback ON PURPOSE: a default gateway would be the only var silently skipping the
+ * "missing env var" guard — and a wrong default published in a public repo is worse than none.
+ * Ask DeFarm for your test-environment host; production is an explicit decision.
+ */
+export const GATEWAY = env("DEFARM_GATEWAY");
 
 /**
  * Each actor gets its OWN keystore file — the whole model is that the producer's private keys
