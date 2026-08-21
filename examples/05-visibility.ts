@@ -40,15 +40,44 @@ await read(
     "Pra demonstrar a leitura pública (esqueleto + commitments), use um item de circuito público.",
 );
 
-step(2, "LOGADO E COM ACESSO: o produtor lê o cru");
+step(2, "LOGADO E COM ACESSO: o produtor lê o cru — em PROJEÇÃO, não em despejo");
 const producer = producerClient();
 await producer.login(env("DEFARM_PRODUCER_EMAIL"), env("DEFARM_PRODUCER_PASSWORD"));
 await read(
-  "resposta autenticada",
-  () => producer.getItem(dfid),
+  "resposta autenticada (projetada)",
+  async () => projectItem(await producer.getItem(dfid)),
   "este workspace NÃO é membro do circuito do item — login sozinho não fura membership. " +
     "Exatamente o esperado pra um não-membro; entre como membro pra ver o cru.",
 );
+
+/**
+ * Projeção didática (issue #16): o JSON completo de um item passa de 4KB e ENTERRA a lição —
+ * e despeja detalhes que não ensinam nada aqui (ex.: os workspace ids dos co-destinatários de
+ * um envelope, a exposição do engines#527). Mostramos só o que prova o ponto: os campos claros
+ * que o membro vê CRUS, e o campo selado aparecendo como ENVELOPE (commitment) — ilegível até
+ * pra quem lê o item inteiro.
+ */
+function projectItem(item: unknown): Record<string, unknown> {
+  const clear: Record<string, unknown> = {};
+  const sealedFields: string[] = [];
+  const CLEAR_KEYS = new Set(["dfid", "sisbov", "chip", "breed", "sex", "weight_kg", "category"]);
+  (function walk(o: unknown): void {
+    if (Array.isArray(o)) for (const v of o) walk(v);
+    else if (o && typeof o === "object") {
+      for (const [k, v] of Object.entries(o)) {
+        if (CLEAR_KEYS.has(k) && (typeof v === "string" || typeof v === "number")) clear[k] ??= v;
+        if (k === "field_path" && typeof v === "string" && !sealedFields.includes(v)) {
+          sealedFields.push(v);
+        }
+        if (/commitment/i.test(k) && typeof v === "string") {
+          clear[`↳ ${k}`] ??= `${v.slice(0, 16)}… (o valor em si: ilegível)`;
+        }
+        walk(v);
+      }
+    }
+  })(item);
+  return { "campos claros (cru, só pra membro)": clear, "campos SELADOS (envelope, ninguém lê aqui)": sealedFields };
+}
 
 step(3, "Resolver por SISBOV (identificador de domínio) — a máscara é consistente por qualquer porta");
 const sisbov = process.env.DEFARM_SISBOV;

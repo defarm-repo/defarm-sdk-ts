@@ -10,12 +10,27 @@
  * na SUA máquina: github.com/defarm-repo/defarm-verify — esse é o argumento final pro auditor.
  */
 import { env, step, show, GATEWAY } from "./lib/setup.js";
-import { DefarmClient } from "../src/index.js";
+import { ApiError, DefarmClient } from "../src/index.js";
 
 const anon = new DefarmClient({ gateway: GATEWAY }); // repare: NENHUMA credencial
 
 step(1, "GET /verify/{dfid} — público, sem auth");
-const report = await anon.verify(env("DEFARM_DFID"));
+let report;
+try {
+  report = await anon.verify(env("DEFARM_DFID"));
+} catch (e) {
+  if (e instanceof ApiError && e.status === 404) {
+    // O mesmo 404 uniforme do 05 (issue #16): o /verify público só serve item de circuito
+    // PÚBLICO — quem não pode ver não descobre nem que existe (publication-gate).
+    console.log(
+      "    404 UNIFORME — o item está em circuito PRIVADO e o /verify público não o serve\n" +
+        "    (publication-gate: sem oráculo de existência). Pra este exemplo, use um DFID de\n" +
+        "    circuito público — ver 'Pré-requisitos' no README.",
+    );
+    process.exit(1); // pré-requisito não atendido = falha explicada, nunca sucesso silencioso
+  }
+  throw e;
+}
 show("carimbos RFC3161 presentes", report.hasTrustedTimestamps);
 show("commitments de campos selados", report.sealedCommitments);
 

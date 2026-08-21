@@ -39,7 +39,8 @@
     "example:03": "tsx examples/03-seal.ts",
     "example:04": "tsx examples/04-open.ts",
     "example:05": "tsx examples/05-visibility.ts",
-    "example:06": "tsx examples/06-verify.ts"
+    "example:06": "tsx examples/06-verify.ts",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "@hpke/chacha20poly1305": "^1.6.1",
