@@ -59,6 +59,36 @@ function requireOpt(opts: Record<string, unknown>, name: string): string {
   return v;
 }
 
+const BUNDLE_FIELDS = [
+  "workspaceId",
+  "encKeyId",
+  "encPubkeyB64",
+  "signingPubkeyB64",
+  "bindingSigB64",
+] as const;
+
+/** Parse a recipient-bundle file, failing with the FILE as the culprit when it is malformed. */
+function readBundle(path: string): import("./client.js").SealRecipientInput {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(path, "utf8"));
+  } catch (e) {
+    fail(`${path} is not readable JSON (${e instanceof Error ? e.message : e})`);
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    fail(`${path} must hold ONE recipient bundle object (from 'defarm keys export')`);
+  }
+  const bundle = parsed as Record<string, unknown>;
+  const missing = BUNDLE_FIELDS.filter((f) => typeof bundle[f] !== "string" || !bundle[f]);
+  if (missing.length > 0) {
+    fail(
+      `${path} is not a recipient bundle — missing field(s): ${missing.join(", ")}. ` +
+        `Expected the JSON printed by 'defarm keys export' on the RECIPIENT's side.`,
+    );
+  }
+  return bundle as unknown as import("./client.js").SealRecipientInput;
+}
+
 function client(): DefarmClient {
   const gateway = process.env.DEFARM_GATEWAY;
   if (!gateway) {
@@ -144,10 +174,13 @@ export async function main(argv: string[]): Promise<void> {
       break;
     }
     case "seal": {
+      // Validate the bundle AT THE DOOR, before any network (review finding on #22): a
+      // malformed file must say "malformed file", never surface later as
+      // RecipientBindingError — which, in a product whose whole story is anti-MITM, reads as
+      // "someone swapped the key" when it was "you pointed at the wrong file". Same pattern
+      // as `ingest --file`.
+      const to = opts.to ? [readBundle(opts.to as string)] : undefined;
       const c = await loggedIn();
-      const to = opts.to
-        ? [JSON.parse(readFileSync(opts.to as string, "utf8"))]
-        : undefined;
       const visibility = opts.visibility as "private" | "public" | undefined;
       if (visibility && visibility !== "private" && visibility !== "public") {
         fail("--visibility must be 'private' or 'public'");

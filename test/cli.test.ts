@@ -87,6 +87,23 @@ describe("defarm CLI", () => {
     expect(e.stderr).toContain("DEFARM_EMAIL");
   });
 
+  it("a malformed --to bundle blames the FILE, never the crypto (review finding on #22)", async () => {
+    const { mkdtempSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const dir = mkdtempSync(join(tmpdir(), "defarm-cli-"));
+    const bad = join(dir, "not-a-bundle.json");
+    writeFileSync(bad, JSON.stringify({ foo: "bar" }));
+    const e = await cli(
+      ["seal", "--dfid", "D", "--field", "f", "--value", "v", "--circuit", "c", "--to", bad],
+      { DEFARM_GATEWAY: gateway, DEFARM_EMAIL: "a@b.c", DEFARM_PASSWORD: "x" },
+    ).catch((err) => err as { code: number; stderr: string });
+    expect(e.code).toBe(1);
+    expect(e.stderr).toContain("not a recipient bundle");
+    expect(e.stderr).toContain("missing field(s): workspaceId");
+    expect(e.stderr).not.toContain("RecipientBindingError");
+  });
+
   it("uniform 404 surfaces as exit 1 with the server's message — never a silent success", async () => {
     const e = await cli(["item", "--dfid", "DFID-PRIVATE", "--public"], {
       DEFARM_GATEWAY: gateway,
