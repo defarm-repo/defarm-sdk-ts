@@ -1,0 +1,77 @@
+# Issue #12: the main CI replays COMMITTED vectors, so a change in the engines oracle
+# (sealed_field.rs) would keep it green. This workflow closes that gap the way that works:
+# REGENERATE the vectors from engines@main and RE-RUN the suite over the fresh set.
+#
+# (A "regenerate and diff" job would be 100% false positives — the envelope churns whole on
+# every run (fresh DK/nonce/HPKE ephemerals); measured in the PR #11 review. Re-running the
+# suite is the A/B that actually detects drift.)
+#
+# Needs the repo secret ENGINES_READ_TOKEN: a fine-grained PAT with read-only Contents access
+# to defarm-repo/engines. The job FAILS LOUDLY without it — a silent skip would be the same
+# fail-open trap this whole family of issues (#2/#9/#13) exists to prevent.
+name: Conformance regen (Rust oracle)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly, Monday 06:17 UTC — drift detection, not per-PR gating (compiling the oracle
+    # takes minutes; the per-PR gate is the committed-vector suite in ci.yml).
+    - cron: "17 6 * * 1"
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require ENGINES_READ_TOKEN
+        env:
+          HAS_TOKEN: ${{ secrets.ENGINES_READ_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::error::secret ENGINES_READ_TOKEN is missing — the oracle cannot be cloned." \
+                 "Create a fine-grained PAT (read-only Contents on defarm-repo/engines) and add it" \
+                 "as a repo secret. Failing loudly instead of skipping (fail-open family #2/#9/#13)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: defarm-repo/engines
+          token: ${{ secrets.ENGINES_READ_TOKEN }}
+          path: engines
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Generate SDK-side X25519 pair (cross-key vector)
+        run: |
+          node --input-type=module -e "
+          import { x25519 } from '@noble/curves/ed25519';
+          const priv = crypto.getRandomValues(new Uint8Array(32));
+          const b64 = (b) => Buffer.from(b).toString('base64');
+          console.log('TS_RECIPIENT_PRIV=' + b64(priv));
+          console.log('TS_RECIPIENT_PUB=' + b64(x25519.getPublicKey(priv)));
+          " >> "$GITHUB_ENV"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: engines/services/layer-2-registry/item-registry
+
+      - name: Regenerate vectors from the oracle
+        env:
+          SQLX_OFFLINE: "true"
+        run: |
+          mkdir -p "$RUNNER_TEMP/fresh-vectors"
+          VECTOR_OUT="$RUNNER_TEMP/fresh-vectors/vectors.json" \
+            cargo test --manifest-path engines/services/layer-2-registry/item-registry/Cargo.toml \
+              --test ts_conformance_vector_gen -- --nocapture
+
+      - name: Re-run the conformance suite over the FRESH vectors
+        run: DEFARM_VECTORS_DIR="$RUNNER_TEMP/fresh-vectors" npx vitest run test/conformance.test.ts

@@ -1,3 +1,11 @@
+// ============================================================================
+// CÓPIA DE LEITURA — NÃO EDITAR AQUI (sugestão da review no engines#607).
+// Fonte canônica: defarm-repo/engines →
+//   services/layer-2-registry/item-registry/tests/ts_conformance_vector_gen.rs
+//   (a única que compila contra o item_registry). Em divergência, o engines manda.
+// Esta cópia existe pra quem audita o SDK sem clonar o engines.
+// ============================================================================
+
 //! Gerador de vetores de conformidade cross-linguagem do envelope selado (engines#591).
 //!
 //! O Rust é o ORÁCULO do formato: este teste sela+assina com chaves de teste FIXAS (fixtures
@@ -27,8 +35,8 @@ use ed25519_dalek::Signer;
 use hpke::kem::X25519HkdfSha256;
 use hpke::{Kem as KemTrait, Serializable};
 use item_registry::api::sealed_field::{
-    canonical_enc_key_binding, canonical_sealer_signing_string, seal_field, sign_sealed_field,
-    verify_sealer_signature, Recipient, SealedField,
+    canonical_enc_key_binding, canonical_sealer_signing_string, open_field, seal_field,
+    sign_sealed_field, verify_sealer_signature, Recipient, SealedField,
 };
 use item_registry::api::trust_encryption_keys::RecipientSealedField;
 
@@ -84,11 +92,24 @@ fn seal_and_sign(
     }
 }
 
+/// #607: o oráculo se auto-checa — cada envelope emitido tem de ABRIR com cada privada que vai
+/// no vetor, batendo o plaintext. Sem isto, um refactor que quebre o round-trip escreveria um
+/// vectors.json inabrível e a falha apareceria na CI do SDK como "o SDK está quebrado" —
+/// diagnóstico invertido, no repo errado.
+fn assert_opens(sealed: &SealedField, recipients: &[(&str, &str)], plaintext: &[u8]) {
+    for (kid, priv_b64) in recipients {
+        let opened = open_field(sealed, kid, priv_b64)
+            .unwrap_or_else(|e| panic!("envelope emitido não abre pra {kid}: {e:?}"));
+        assert_eq!(opened, plaintext, "plaintext divergiu ao abrir pra {kid}");
+    }
+}
+
 fn envelope_json(
     s: &Sealed,
     recipients: &[(&str, &str)], // (enc_key_id, privkey_b64)
     plaintext: &[u8],
 ) -> serde_json::Value {
+    assert_opens(&s.sealed, recipients, plaintext);
     serde_json::json!({
         "sealed_field": s.sealed,
         "recipients": recipients.iter().map(|(kid, priv_b64)| serde_json::json!({
@@ -218,6 +239,7 @@ fn generate_ts_conformance_vectors() {
     // ── 4. api_response: a fixture sai do SERIALIZER real (nunca batizada à mão) ────────────────
     let authorship = verify_sealer_signature(&s1.sealed, &s1.sealer_pub_b64);
     assert!(authorship, "fixture deve verificar");
+    assert_opens(&s1.sealed, &[("enc-frigo", &frigo_priv)], plaintext);
     let api_field = RecipientSealedField {
         dfid: s1.sealed.dfid.clone(),
         event_id: uuid::Uuid::parse_str("0a0a0a0a-0b0b-0c0c-0d0d-0e0e0e0e0e0e").unwrap(),
