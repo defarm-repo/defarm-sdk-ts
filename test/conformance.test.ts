@@ -25,7 +25,26 @@ import type { SealedField } from "../src/core/envelope.js";
  * FAIL CLOSED (issues #2 and #9): the guard counts ASSERTING SECTIONS, not files — an empty
  * directory, `[]`, or vectors with no known section must fail, never pass green.
  */
-const VECTORS_DIR = join(dirname(fileURLToPath(import.meta.url)), "vectors");
+/**
+ * Overridable so the regen workflow (issue #12) can re-run this suite over vectors freshly
+ * generated from the engines oracle instead of the committed ones.
+ */
+const VECTORS_DIR =
+  process.env.DEFARM_VECTORS_DIR ?? join(dirname(fileURLToPath(import.meta.url)), "vectors");
+
+/**
+ * The vectors every run MUST carry, by NAME (issue #13 — third of the fail-open family after
+ * #2 and #9: counting is not asserting). Losing any single one — the cross-key vector is the
+ * easiest, since generating it depends on TS_RECIPIENT_PUB/PRIV being exported — must fail
+ * loudly, naming what is missing. Adding a vector to the oracle means adding its name here.
+ */
+const REQUIRED_VECTORS = [
+  "envelope-basico-1-destinatario",
+  "envelope-3-destinatarios-fora-de-ordem",
+  "conteudo-json-unicode",
+  "api-response-do-serializer",
+  "cross-key-chave-gerada-pelo-sdk",
+];
 
 interface ConformanceVector {
   name: string;
@@ -98,6 +117,17 @@ describe("conformance vectors (Rust oracle, engines#591)", () => {
       "test/vectors/ holds no asserting vectors — the anti-drift guard would be inert. " +
         "Restore the vectors or regenerate them from the Rust oracle (engines#591).",
     ).toBeGreaterThan(0);
+  });
+
+  it("every required vector is present BY NAME (losing one fails, naming it)", () => {
+    const names = new Set(fileVectors.flatMap(({ vectors }) => vectors.map((v) => v.name)));
+    for (const required of REQUIRED_VECTORS) {
+      expect(
+        names.has(required),
+        `required vector "${required}" is missing — if it was dropped on regeneration, ` +
+          `check the generator env (the cross-key vector needs TS_RECIPIENT_PUB/PRIV exported)`,
+      ).toBe(true);
+    }
   });
 
   for (const { file, vectors } of fileVectors) {
