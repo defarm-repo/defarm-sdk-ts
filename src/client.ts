@@ -443,7 +443,16 @@ export class DefarmClient {
         },
       });
     } catch (e) {
-      if (e instanceof ApiError && /field_protection|not.*sealable|sealed_not_allowed/i.test(`${e.code} ${e.message}`)) {
+      // Issue #18: the server has NO structured code for this case (it returns the generic
+      // `validation_error` — engines#618 asks for one), so the ONLY distinguishing signal is the
+      // exact message from `storage/postgres.rs` ("sealed field failed policy validation").
+      // Pinned to the server source and guarded by a fixture test — never invented, never
+      // paraphrased (the previous regex guessed three strings the server never says, and the
+      // typed error sat dead for days).
+      if (
+        e instanceof ApiError &&
+        /sealed field failed policy validation/i.test(e.message)
+      ) {
         throw new NotSealableFieldError(fieldPath);
       }
       throw e;

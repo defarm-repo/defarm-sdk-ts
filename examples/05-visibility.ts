@@ -14,6 +14,7 @@
  * 404 uniforme — e o exemplo diz isso em vez de morrer.
  */
 import { env, producerClient, step, show, GATEWAY } from "./lib/setup.js";
+import { projectItem } from "./lib/project.js";
 import { ApiError, DefarmClient } from "../src/index.js";
 
 const dfid = env("DEFARM_DFID");
@@ -34,8 +35,8 @@ async function read(label: string, fn: () => Promise<unknown>, on404: string): P
 step(1, "ANÔNIMO: GET /items/{dfid}/public — o esqueleto, sem login nenhum");
 const anon = new DefarmClient({ gateway: GATEWAY });
 await read(
-  "resposta pública",
-  () => anon.getItemPublic(dfid),
+  "resposta pública (projetada)",
+  async () => projectItem(await anon.getItemPublic(dfid)),
   "o item está em circuito PRIVADO, e quem não pode ver não descobre nem que existe. " +
     "Pra demonstrar a leitura pública (esqueleto + commitments), use um item de circuito público.",
 );
@@ -50,41 +51,13 @@ await read(
     "Exatamente o esperado pra um não-membro; entre como membro pra ver o cru.",
 );
 
-/**
- * Projeção didática (issue #16): o JSON completo de um item passa de 4KB e ENTERRA a lição —
- * e despeja detalhes que não ensinam nada aqui (ex.: os workspace ids dos co-destinatários de
- * um envelope, a exposição do engines#527). Mostramos só o que prova o ponto: os campos claros
- * que o membro vê CRUS, e o campo selado aparecendo como ENVELOPE (commitment) — ilegível até
- * pra quem lê o item inteiro.
- */
-function projectItem(item: unknown): Record<string, unknown> {
-  const clear: Record<string, unknown> = {};
-  const sealedFields: string[] = [];
-  const CLEAR_KEYS = new Set(["dfid", "sisbov", "chip", "breed", "sex", "weight_kg", "category"]);
-  (function walk(o: unknown): void {
-    if (Array.isArray(o)) for (const v of o) walk(v);
-    else if (o && typeof o === "object") {
-      for (const [k, v] of Object.entries(o)) {
-        if (CLEAR_KEYS.has(k) && (typeof v === "string" || typeof v === "number")) clear[k] ??= v;
-        if (k === "field_path" && typeof v === "string" && !sealedFields.includes(v)) {
-          sealedFields.push(v);
-        }
-        if (/commitment/i.test(k) && typeof v === "string") {
-          clear[`↳ ${k}`] ??= `${v.slice(0, 16)}… (o valor em si: ilegível)`;
-        }
-        walk(v);
-      }
-    }
-  })(item);
-  return { "campos claros (cru, só pra membro)": clear, "campos SELADOS (envelope, ninguém lê aqui)": sealedFields };
-}
 
 step(3, "Resolver por SISBOV (identificador de domínio) — a máscara é consistente por qualquer porta");
 const sisbov = process.env.DEFARM_SISBOV;
 if (sisbov) {
   await read(
-    "resolve por identificador",
-    () => producer.resolveByIdentifier("SISBOV", sisbov),
+    "resolve por identificador (projetado)",
+    async () => projectItem(await producer.resolveByIdentifier("SISBOV", sisbov)),
     "mesma regra por qualquer identificador: não-membro/privado = 404 uniforme.",
   );
 } else {
