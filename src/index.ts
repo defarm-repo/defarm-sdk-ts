@@ -27,6 +27,7 @@ export {
   type VerifyReport,
   type Keystore,
 } from "./client.js";
+export type { KeyKind, StoredKey } from "./keystore.js";
 export {
   DefarmError,
   ApiError,
