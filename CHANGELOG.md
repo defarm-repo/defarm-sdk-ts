@@ -3,7 +3,11 @@
 All notable changes to `@defarm/sdk`. The 0.2.x line is the first with client-side sealing
 (0.1.x, in the `tooling` repo, was a thin HTTP client — pre-sealing).
 
-## Unreleased (0.2.0-alpha)
+## 0.2.0 — 2026-08-21
+
+First release of the sealing line. Everything below shipped through reviewed PRs (#1–#22)
+with cross-language conformance green in CI and the wire format interop-proven against the
+Rust reference implementation.
 
 ### Breaking changes (pre-publish, no npm release carried the old shapes)
 
