@@ -66,5 +66,8 @@
     "blind-envelope",
     "stellar",
     "agriculture"
-  ]
+  ],
+  "bin": {
+    "defarm": "./dist/cli.js"
+  }
 }
