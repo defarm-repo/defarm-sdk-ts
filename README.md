@@ -6,7 +6,7 @@ recipients you address can ever read them. The DeFarm server stores the sealed e
 **structurally blind** — it holds no private key, so it *cannot* read, not merely *does not*.
 
 > Don't trust DeFarm — audit this SDK. The crypto client is open source (MIT) precisely so that
-> an agency, a partner, or an auditor can read every line that touches a key. The pure crypto
+> an agency, a partner, or an auditor can audit every cryptographic operation on a key. The pure crypto
 > lives in [`src/core/`](https://github.com/defarm-repo/defarm-sdk-ts/tree/main/src/core), free of network and I/O, and is held byte-for-byte to the
 > Rust reference implementation by cross-language conformance vectors.
 
@@ -44,7 +44,7 @@ Node 18+. Pure-JS crypto ([hpke-js](https://github.com/dajiaji/hpke-js) +
 import { DefarmClient } from "@defarm/sdk";
 
 const defarm = new DefarmClient({
-  gateway: "https://staging.defarm.net", // one base URL repoints everything
+  gateway: testGateway, // ask DeFarm for your test-environment host; one base URL repoints everything
   network: "testnet",                    // production anchoring is explicit opt-in
 });
 
@@ -87,7 +87,8 @@ field — *seal? for whom? via link?* — everything else is default/directory/d
 ## Status
 
 `0.2.x` is the first line with client-side sealing (the `0.1.x` line was a thin HTTP client,
-pre-sealing). Alpha until the cross-language conformance vectors are green in CI. Features
+pre-sealing). The cross-language conformance vectors are green in CI and regenerated weekly
+from the server's Rust implementation. Features
 blocked on backend work are declared and throw `NotImplementedError` with the issue reference —
 they are never faked: `grant()` (re-wrap), `grantLink()` (capability token), `revoke()`.
 
