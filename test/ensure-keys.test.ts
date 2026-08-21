@@ -147,3 +147,47 @@ describe("ensureKeys treats 409 as success ONLY on matching public key (issue #4
     await expect(c.ensureKeys()).rejects.toThrow(/409|already registered/);
   });
 });
+
+describe("exportRecipient assembles the out-of-band bundle from the directory", () => {
+  function directoryGateway() {
+    let signing: { key_id: string; public_key_b64: string } | null = null;
+    let enc: { key_id: string; public_key_b64: string; binding_sig_b64: string } | null = null;
+    const fetchImpl = (async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      const respond = (status: number, body: unknown) =>
+        new Response(JSON.stringify(body), { status });
+      if (url.endsWith("/auth/me")) return respond(200, { user_id: "u1", workspace_id: "ws-1" });
+      if (method === "POST" && url.endsWith("/workspace/signing-keys")) {
+        const b = JSON.parse(init!.body as string);
+        signing = { key_id: b.key_id, public_key_b64: b.public_key_b64 };
+        return respond(201, { ok: true });
+      }
+      if (method === "POST" && url.endsWith("/workspace/encryption-keys")) {
+        const b = JSON.parse(init!.body as string);
+        enc = { key_id: b.key_id, public_key_b64: b.public_key_b64, binding_sig_b64: b.binding_sig_b64 };
+        return respond(201, { ok: true });
+      }
+      if (method === "GET" && url.endsWith("/workspace/signing-keys")) return respond(200, [signing]);
+      if (method === "GET" && url.endsWith("/workspace/encryption-keys")) return respond(200, [enc]);
+      throw new Error(`unexpected call: ${method} ${url}`);
+    }) as unknown as typeof fetch;
+    return fetchImpl;
+  }
+
+  it("bundle carries exactly what the directory serves, and the sealer-side binding check passes", async () => {
+    const c = client(directoryGateway());
+    const bundle = await c.exportRecipient();
+    expect(bundle.workspaceId).toBe("ws-1");
+    // The bundle must survive the exact check seal() runs on it.
+    const { verifyEncKeyBinding } = await import("../src/core/index.js");
+    expect(
+      verifyEncKeyBinding(
+        bundle.workspaceId,
+        bundle.encKeyId,
+        bundle.encPubkeyB64,
+        bundle.bindingSigB64,
+        bundle.signingPubkeyB64,
+      ),
+    ).toBe(true);
+  });
+});

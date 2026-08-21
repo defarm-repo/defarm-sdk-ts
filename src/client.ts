@@ -294,6 +294,38 @@ export class DefarmClient {
     }
   }
 
+  /**
+   * Assemble MY OWN recipient bundle for out-of-band sharing (the [S6] workaround): everything a
+   * sealer needs to address me — public keys and the signed binding, pulled from the server's own
+   * listings (never recomputed locally, so what you share is exactly what the directory serves).
+   * Send the result to whoever will seal for you; their SDK re-verifies the binding before use.
+   * Contains ONLY public material.
+   */
+  async exportRecipient(): Promise<SealRecipientInput> {
+    const identity = await this.ensureKeys();
+    const encKeys = await this.http.request<
+      { key_id: string; public_key_b64: string; binding_sig_b64: string }[]
+    >("GET", `${this.http.base}/workspace/encryption-keys`);
+    const enc = encKeys.find((k) => k.key_id === identity.encKeyId);
+    if (!enc) {
+      throw new ApiError(0, "enc_key_not_listed", "own encryption key missing from the directory");
+    }
+    const signingKeys = await this.http.request<
+      { key_id: string; public_key_b64: string }[]
+    >("GET", `${this.http.base}/workspace/signing-keys`);
+    const signing = signingKeys.find((k) => k.key_id === identity.signingKeyId);
+    if (!signing) {
+      throw new ApiError(0, "signing_key_not_listed", "own signing key missing from the directory");
+    }
+    return {
+      workspaceId: identity.workspaceId,
+      encKeyId: enc.key_id,
+      encPubkeyB64: enc.public_key_b64,
+      signingPubkeyB64: signing.public_key_b64,
+      bindingSigB64: enc.binding_sig_b64,
+    };
+  }
+
   // ── 2. ingest ───────────────────────────────────────────────────────────────
 
   /**

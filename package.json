@@ -1,7 +1,7 @@
 {
   "name": "@defarm/sdk",
   "version": "0.2.0-alpha.0",
-  "description": "DeFarm SDK — verifiable agri traceability with client-side sealing (blind envelopes). The DeFarm server never sees your keys or your sealed data.",
+  "description": "DeFarm SDK \u2014 verifiable agri traceability with client-side sealing (blind envelopes). The DeFarm server never sees your keys or your sealed data.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -32,7 +32,14 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:examples": "tsc -p tsconfig.examples.json --noEmit",
+    "example:01": "tsx examples/01-setup-keys.ts",
+    "example:02": "tsx examples/02-ingest.ts",
+    "example:03": "tsx examples/03-seal.ts",
+    "example:04": "tsx examples/04-open.ts",
+    "example:05": "tsx examples/05-visibility.ts",
+    "example:06": "tsx examples/06-verify.ts"
   },
   "dependencies": {
     "@hpke/chacha20poly1305": "^1.6.1",
@@ -44,6 +51,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
+    "tsx": "^4.23.12",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   },
