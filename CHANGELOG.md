@@ -3,6 +3,16 @@
 All notable changes to `@defarm/sdk`. The 0.2.x line is the first with client-side sealing
 (0.1.x, in the `tooling` repo, was a thin HTTP client — pre-sealing).
 
+## 0.2.1 — 2026-08-22
+
+### Fixed
+
+- **The published `defarm` bin was inert** (P0, release review): npm installs the bin as a
+  symlink; Node resolves the symlink in `import.meta.url` but keeps it in `argv[1]`, so the
+  entry guard never matched and `main()` silently never ran — `defarm` exited 0 with no output.
+  The guard now realpaths `argv[1]`. Regression suite added that exercises the bin THE WAY THE
+  USER RUNS IT (npm pack → clean install → `node_modules/.bin/defarm`), proven by mutation.
+
 ## 0.2.0 — 2026-08-21
 
 First release of the sealing line. Everything below shipped through reviewed PRs (#1–#22)

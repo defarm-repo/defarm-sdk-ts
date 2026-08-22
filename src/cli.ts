@@ -12,7 +12,8 @@
  * exit 0 only on success. Zero dependencies beyond the SDK itself (node:util parseArgs).
  */
 import { parseArgs } from "node:util";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { DefarmClient, FileKeystore } from "./index.js";
 import { DefarmError } from "./errors.js";
 
@@ -242,8 +243,24 @@ export async function main(argv: string[]): Promise<void> {
   }
 }
 
-// Only run when invoked as a binary (import.meta check keeps it testable as a module).
-if (import.meta.url === `file://${process.argv[1]}`) {
+/**
+ * Run when invoked as a binary, INCLUDING through the symlink npm installs into
+ * `node_modules/.bin` (P0 of the 0.2.0 release review): Node resolves the symlink in
+ * `import.meta.url` but keeps it in `argv[1]`, so a naive equality check is false through the
+ * bin and `main()` silently never runs — published and inert. Realpath-ing argv[1] makes both
+ * paths agree; the guard exists so importing this module (tests) doesn't execute main.
+ */
+function isDirectRun(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(entry)).href;
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectRun()) {
   main(process.argv.slice(2)).catch((e: unknown) => {
     if (e instanceof DefarmError) fail(`${e.name}: ${e.message}`);
     fail(e instanceof Error ? e.message : String(e));

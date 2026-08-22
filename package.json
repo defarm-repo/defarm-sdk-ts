@@ -1,6 +1,6 @@
 {
   "name": "@defarm/sdk",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "DeFarm SDK \u2014 verifiable agri traceability with client-side sealing (blind envelopes). The DeFarm server never sees your keys or your sealed data.",
   "license": "MIT",
   "repository": {
