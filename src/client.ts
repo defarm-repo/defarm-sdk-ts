@@ -95,6 +95,20 @@ export interface SealInput {
    * ENVELOPE (commitment, not the value) surface on the public /verify page.
    */
   visibility?: "private" | "public";
+  /**
+   * The event type the sealed field rides on. Default `item_updated`. This is NOT cosmetic:
+   * the server loads the sealable-fields policy BY event type (`event_field_mappings WHERE
+   * event_type = $1`), so a field declared sealable for e.g. `item_terminated` is unreachable
+   * under any other type — the write fails closed. Match the declaration (engines#582).
+   */
+  eventType?: string;
+  /**
+   * The event's `source_type` — WHO kind of actor is recording it. Default `producer`. The
+   * server enforces a canonical list by DB constraint (`events_source_check`; includes
+   * `certifier`, `government`, `sanitary_agency`, …). An attestation sealed by a certifier
+   * should say so: the audit trail's actor label is part of what a verifier reads.
+   */
+  sourceType?: string;
 }
 
 export interface OpenInput {
@@ -368,6 +382,8 @@ export class DefarmClient {
       throw new InvalidInputError("value", 'seal() requires "value" — the data to seal');
     }
     const { dfid, fieldPath, value, ...opts } = input;
+    const eventType = opts.eventType ?? "item_updated";
+    const sourceType = opts.sourceType ?? "producer";
     const identity = await this.ensureKeys();
     const signing = await this.keystore.get("signing");
     if (!signing) throw new KeystoreError("signing key vanished from keystore");
@@ -431,8 +447,8 @@ export class DefarmClient {
     try {
       response = await this.http.request("POST", `${this.http.base}/events`, {
         body: {
-          event_type: "item_updated",
-          source_type: "producer",
+          event_type: eventType,
+          source_type: sourceType,
           circuit_id: opts.circuitId,
           item_id: itemUuid,
           visibility: opts.visibility ?? "private",

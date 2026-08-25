@@ -3,6 +3,17 @@
 All notable changes to `@defarm/sdk`. The 0.2.x line is the first with client-side sealing
 (0.1.x, in the `tooling` repo, was a thin HTTP client — pre-sealing).
 
+## 0.2.2 — 2026-08-25
+
+### Added
+
+- `seal({ eventType })` / CLI `--event-type` — the event type the sealed field rides on
+  (default `item_updated`, unchanged). Not cosmetic: the server loads the sealable-fields
+  policy BY event type, so a field declared sealable for e.g. `item_terminated` was
+  unreachable before this option — the write failed closed. Found preparing the IAGRO
+  Etapa 2 E2E (HU-15: sealed `motivo_baixa` on a termination event). Wire-level tests
+  assert the posted `event_type` and the AAD `client_event_id` binding.
+
 ## 0.2.1 — 2026-08-22
 
 ### Fixed
