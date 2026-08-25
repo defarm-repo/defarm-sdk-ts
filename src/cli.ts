@@ -34,6 +34,7 @@ Commands:
   seal --dfid D --field F --value V --circuit C
        [--to <bundle.json>] [--visibility private|public] [--no-self]
        [--event-type item_updated|item_terminated|…]  (must match the field's #582 declaration)
+       [--source-type producer|certifier|…]  (who is recording; server-validated list)
   open --dfid D --field F                  decrypt a sealed field addressed to you, locally
   verify --dfid D                          public verification (no credentials needed)
   item --dfid D [--public]                 membership-gated (or public) item read
@@ -139,6 +140,7 @@ export async function main(argv: string[]): Promise<void> {
       to: { type: "string" },
       visibility: { type: "string" },
       "event-type": { type: "string" },
+      "source-type": { type: "string" },
       "no-self": { type: "boolean" },
       public: { type: "boolean" },
       type: { type: "string" },
@@ -197,6 +199,7 @@ export async function main(argv: string[]): Promise<void> {
         ...(opts["no-self"] ? { includeSelf: false } : {}),
         ...(visibility ? { visibility } : {}),
         ...(opts["event-type"] ? { eventType: opts["event-type"] as string } : {}),
+        ...(opts["source-type"] ? { sourceType: opts["source-type"] as string } : {}),
       });
       out({
         dfid: result.dfid,

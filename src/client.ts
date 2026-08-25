@@ -102,6 +102,13 @@ export interface SealInput {
    * under any other type — the write fails closed. Match the declaration (engines#582).
    */
   eventType?: string;
+  /**
+   * The event's `source_type` — WHO kind of actor is recording it. Default `producer`. The
+   * server enforces a canonical list by DB constraint (`events_source_check`; includes
+   * `certifier`, `government`, `sanitary_agency`, …). An attestation sealed by a certifier
+   * should say so: the audit trail's actor label is part of what a verifier reads.
+   */
+  sourceType?: string;
 }
 
 export interface OpenInput {
@@ -376,6 +383,7 @@ export class DefarmClient {
     }
     const { dfid, fieldPath, value, ...opts } = input;
     const eventType = opts.eventType ?? "item_updated";
+    const sourceType = opts.sourceType ?? "producer";
     const identity = await this.ensureKeys();
     const signing = await this.keystore.get("signing");
     if (!signing) throw new KeystoreError("signing key vanished from keystore");
@@ -440,7 +448,7 @@ export class DefarmClient {
       response = await this.http.request("POST", `${this.http.base}/events`, {
         body: {
           event_type: eventType,
-          source_type: "producer",
+          source_type: sourceType,
           circuit_id: opts.circuitId,
           item_id: itemUuid,
           visibility: opts.visibility ?? "private",
