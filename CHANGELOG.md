@@ -3,6 +3,17 @@
 All notable changes to `@defarm/sdk`. The 0.2.x line is the first with client-side sealing
 (0.1.x, in the `tooling` repo, was a thin HTTP client — pre-sealing).
 
+## Unreleased
+
+### Added
+
+- `examples/recipes/custody-split.ts`: first entry in a new `examples/recipes/` folder for
+  standalone recipes that answer a specific "how do I compute X" question, outside the
+  numbered 01-06 onboarding ladder (which stays 1:1 with the Postman collection). Given an
+  item's custody history (several parties, each with an entered/left window, e.g.
+  cria → recria → engorda), it splits a total value proportionally to days held. Pure
+  function, no network call (`npx tsx examples/recipes/custody-split.ts`).
+
 ## 0.2.1 — 2026-08-22
 
 ### Fixed
